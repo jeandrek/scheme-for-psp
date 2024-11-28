@@ -1,0 +1,18 @@
+Scheme for MIPS/PSP
+-------------------
+
+(Name suggestions welcome)
+
+Not nearly yet R4RS/R5RS compliant
+
+Ported from my RISC-V assembly Scheme interpreter to MIPS assembly:
+https://github.com/jeandrek/scratch-risc-v-programs
+-- it was really cool how easy it was to get it to start assembling, and
+from there not long till it started working.
+
+Depends on pspsdk
+
+Input is pretty bad (left/right triggers to select character; X to input;
+square to delete; triangle to enter)
+
+More to come
