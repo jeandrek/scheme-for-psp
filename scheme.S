@@ -1,6 +1,9 @@
 #### A simple Scheme interpreter
 #### With a SICP-esque Cheney's algorithm garbage collector
 
+### (Strings are allocated using malloc and swept by GC, possibly
+### not ideal)
+
 #define TAG_PAIR	0
 #define TAG_FIXNUM	1
 #define TAG_PROCEDURE	2
@@ -155,7 +158,7 @@ make_initial_environment:
 
 #define CHECK_PAIR(x)			\
 	beqz	x,1f;			\
-	andi	$t0,x,3;			\
+	andi	$t0,x,7;		\
 	beqz	$t0,2f;			\
 1:					\
 	move	$a1,x;			\
@@ -164,7 +167,7 @@ make_initial_environment:
 2:
 
 #define CHECK_FIXNUM(x) 		\
-	andi	$t0,x,3;			\
+	andi	$t0,x,7;		\
 	li	$t1,TAG_FIXNUM;		\
 	beq	$t0,$t1,1f;		\
 	move	$a1,x;			\
@@ -189,7 +192,7 @@ Lcmp:
 
 prim_integerp:
 	lw	$a0,($a0)
-	andi	$a0,$a0,3
+	andi	$a0,$a0,7
 	li	$t0,TAG_FIXNUM
 	bne	$a0,$t0,1f
 	li	$a0,TRUE
@@ -263,7 +266,7 @@ prim_remainder:
 
 prim_pairp:
 	lw	$a0,($a0)
-	andi	$t0,$a0,3
+	andi	$t0,$a0,7
 	bnez	$t0,1f
 	beqz	$a0,1f
 	li	$a0,TRUE
@@ -309,7 +312,7 @@ prim_list:
 
 prim_symbolp:
 	lw	$a0,($a0)
-	andi	$t0,$a0,3
+	andi	$t0,$a0,7
 	li	$t1,TAG_SYMBOL
 	bne	$t0,$t1,1f
 	li	$t0,TRUE
@@ -324,7 +327,7 @@ prim_symbolp:
 
 prim_procedurep:
 	lw	$a0,($a0)
-	andi	$t0,$a0,3
+	andi	$t0,$a0,7
 	li	$t1,TAG_PROCEDURE
 	bne	$t0,$t1,1f
 	li	$a0,TRUE
@@ -383,7 +386,7 @@ prim_image:
 
 	.globl	eval
 eval:
-	andi	$t0,$a0,3
+	andi	$t0,$a0,7
 	bnez	$t0,1f
 	beqz	$a0,2f
 	j	Leval_pair
@@ -398,6 +401,8 @@ eval:
 	beq	$a0,$t0,Leval_self_evaluating
 	j	Leval_variable
 2:
+	li	$t1,TAG_STRING
+	beq	$t0,$t1,Leval_self_evaluating
 	move	$a1,$a0
 	la	$a0,str_bad_exp
 	j	error
@@ -443,7 +448,7 @@ Leval_pair:
 	j	apply
 
 
-## $special forms
+## Special forms
 
 Leval_quote:
 	lw	$a0,4($a0)
@@ -611,7 +616,7 @@ Leval_define:
 	sw	$a1,8($sp)
 	lw	$t0,4($a0)
 	lw	$t1,($t0)
-	andi	$t2,$t1,3
+	andi	$t2,$t1,7
 	bnez	$t2,1f
 	lw	$t2,($t1)
 	lw	$a0,4($t1)
@@ -708,7 +713,7 @@ make_procedure:
 
 	.globl	apply
 apply:
-	andi	$t0,$a0,3
+	andi	$t0,$a0,7
 	li	$t1,TAG_PROCEDURE
 	bne	$t0,$t1,Lnot_proc
 	xori	$t0,$a0,TAG_PROCEDURE
@@ -881,6 +886,8 @@ Lwhitespace:
 	beq	$a0,$t1,Lread_list
 	li	$t1,'\''
 	beq	$a0,$t1,Lread_quote
+	li	$t1,'\"'
+	beq	$a0,$t1,Lread_string
 	li	$t1,'#'
 	beq	$a0,$t1,Lread_hash
 Lunexpected_char:
@@ -989,6 +996,27 @@ Lread_quote:
 	addi	$sp,$sp,16
 	j	cons
 
+Lread_string:
+	addi	$sp,$sp,-32
+	sw	$sp,40($sp)
+1:
+	jal	readchar
+	li	$t0,'\"'
+	lw	$t1,40($sp)
+	beq	$a0,$t0,2f
+	sb	$a0,($t1)
+	addi	$t1,$t1,1
+	sw	$t1,40($sp)
+	j	1b
+2:
+	sb	$zero,($t1)
+	move	$a1,$sp
+	sub	$a0,$t1,$a1
+	jal	alloc_string
+	lw	$ra,44($sp)
+	addi	$sp,$sp,48
+	jr	$ra
+
 Lread_hash:
 	jal	readchar
 	li	$t0,'t'
@@ -1095,7 +1123,7 @@ str_cpy:
 write:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
-	andi	$t0,$a0,3
+	andi	$t0,$a0,7
 	bnez	$t0,1f
 	beqz	$a0,Lwrite_empty_list
 	j	Lwrite_pair
@@ -1104,6 +1132,8 @@ write:
 	beq	$t0,$t1,Lwrite_fixnum
 	li	$t1,TAG_PROCEDURE
 	beq	$t0,$t1,Lwrite_procedure
+	li	$t1,TAG_STRING
+	beq	$t0,$t1,Lwrite_string
 	li	$t0,TRUE
 	beq	$a0,$t0,Lwrite_true
 	li	$t0,FALSE
@@ -1147,7 +1177,7 @@ Lnext_element:
 	li	$a0,' '
 	jal	writechar
 	lw	$a0,8($sp)
-	andi	$t0,$a0,3
+	andi	$t0,$a0,7
 	beqz	$t0,Lnext_element
 	sw	$a0,8($sp)
 	li	$a0,'.'
@@ -1191,6 +1221,54 @@ Lwrite_symbol:
 	xori	$a0,$a0,TAG_SYMBOL
 	addi	$sp,$sp,16
 	j	writestr
+Lwrite_string:
+	sw	$a0,8($sp)
+	li	$a0,'\"'
+	jal	writechar
+	lw	$a0,8($sp)
+	xori	$a0,$a0,TAG_STRING
+	addi	$a0,$a0,5
+	jal	writestr
+	li	$a0,'\"'
+	jal	writechar
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
+
+
+### Strings
+	.globl	alloc_string
+alloc_string:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	sw	$a1,8($sp)
+	addi	$a0,$a0,6
+	sw	$a0,4($sp)
+	jal	malloc		## XXX alignment 2^3
+	bnez	$v0,1f
+	jal	gc
+	lw	$a0,4($sp)
+	jal	malloc
+	bnez	$v0,1f
+	la	$a0,str_out_of_mem
+	li	$a1,0
+	j	error
+1:
+	#  4    1     n    1
+	# next mark string 0
+	la	$t0,all_strings
+	lw	$t1,($t0)
+	sw	$t1,($v0)
+	sw	$v0,($t0)
+	addi	$t0,$v0,4
+	sb	$zero,($t0)	## mark
+	lw	$a1,8($sp)
+	addi	$a0,$v0,5
+	jal	str_cpy
+	ori	$a0,$v0,TAG_STRING
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
 
 
 ### Lists
@@ -1278,7 +1356,7 @@ Ltraverse_stack:
 	addi	$t1,$t1,4
 	j	Ltraverse_stack
 Lgc_loop:
-	beq	$t0,REG_FREE,1f
+	beq	$t0,REG_FREE,Lsweep_strings
 	lw	$t1,($t0)
 	lw	$t2,4($t0)
 	move	$a0,$t1
@@ -1290,16 +1368,45 @@ Lgc_loop:
 	addi	$t0,$t0,8
 	j	Lgc_loop
 1:
+	la	$t0,all_strings
+	lw	$t0,($t0)
+	beqz	$t0,2f
+	lw	$t1,($t0)
+	# t0 previous pointer
+	# XXX first string doesn't get GC'd for now
+Lsweep_strings:
+	beqz	$t1,2f
+	addi	$t2,$t1,4
+	lb	$t2,($t2)
+	bnez	$t2,1f
+	lw	$t2,($t1)
+	sw	$t2,($t0)	# unlink
+	sw	$t2,8($sp)
+	sw	$t0,4($sp)
+	move	$a0,$t1
+	jal	free
+	lw	$t0,4($sp)
+	lw	$t1,8($sp)
+	j	Lsweep_strings
+1:
+	addi	$t2,$t1,4
+	sb	$zero,($t2)
+	move	$t0,$t1
+	lw	$t1,($t0)
+	j	Lsweep_strings
+2:
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
 
 relocate:
 	beqz	$a0,1f
-	andi	$t5,$a0,3
+	andi	$t5,$a0,7
 	beqz	$t5,Lrelocate_pair
 	li	$t6,TAG_PROCEDURE
 	beq	$t5,$t6,Lrelocate_procedure
+	li	$t6,TAG_STRING
+	beq	$t5,$t6,Lmark_string
 1:
 	jr	$ra
 Lrelocate_procedure:
@@ -1330,12 +1437,18 @@ Lrelocate_pair:
 Lfound_broken_heart:
 	move	$a0,$t6
 	jr	$ra
+Lmark_string:
+	xori	$a0,$a0,TAG_STRING
+	li	$t0,1
+	sb	$t0,($a0)
+	jr	$ra
 
 	.bss
 repl_sp:	.skip	4
 image_env:	.skip	4
 image_free:	.skip	4
 pair_memory:	.skip	2*SPACE_SIZE
+all_strings:	.skip	4
 	.section	.rodata
 ext_alph_chars:	.string	"!$%&*+-./:<=>?@^_~"
 str_msg:	.string	"Scheme interpreter\n"

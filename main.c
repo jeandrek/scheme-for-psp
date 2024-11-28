@@ -61,7 +61,8 @@ readline(void)
 		'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
 		'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
 		'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-		'(', ')', '+', '-', '*', '/', '=', '?', '#', ' '
+		'(', ')', '+', '-', '*', '/', '<', '=', '>', '?', '\'', '"',
+		'#', ' '
 	};
 
 	pspDebugScreenSetBackColor(0xffffffff);
@@ -109,7 +110,8 @@ readline(void)
 		}
 		if (latch.uiBreak & PSP_CTRL_TRIANGLE) {
 			pspDebugScreenSetBackColor(0);
-			pspDebugScreenPutChar(x*7, y*8, 0, ' ');
+			pspDebugScreenPutChar(x*7, y*8, 0xffffffff,
+					      c == 0 ? ' ' : c);
 			if (c != 0)
 				line[i++] = c;
 			x = 0;
