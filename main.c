@@ -8,8 +8,6 @@
 
 PSP_MODULE_INFO("scheme", 0, 1, 1);
 
-char scheme_memory[0x1000 * 2];
-
 int
 exit_callback(int arg1, int arg2, void *argp)
 {

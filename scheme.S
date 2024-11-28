@@ -5,11 +5,16 @@
 #define TAG_FIXNUM	1
 #define TAG_PROCEDURE	2
 #define TAG_SYMBOL	3
+#define TAG_STRING	4
+# #define TAG_CHARACTER	5
+# #define TAG_VECTOR	6
+# #define TAG_future	7
+
 
 #define REG_FROMSPACE	$s5
 #define REG_TOSPACE	$s6
 #define REG_FREE	$s7
-#define TOP_OF_STACK	scheme_memory
+#define PAIR_MEM	pair_memory
 #define SPACE_SIZE	0x1000
 
 #define SYMBOL_LENGTH	16
@@ -30,210 +35,6 @@
 #define NAME_SYM(n1, n2)	.align 4; sym_ ## n1 = . + 3; .string n2
 #define MAKE_SYM(name)		.align 4; .string name
 
-###################
-## 	.rdata
-## 	.align	2
-## $LC1:
-## 	.ascii	"%c\000"
-## 	.text
-## 	.globl	writechar
-## 	.set	nomips16
-## 	.set	nomicromips
-## 	.ent	writechar
-## 	.type	writechar, @function
-## writechar:
-## 	.frame	$fp,16,$31		# vars= 8, regs= 2/0, args= 0, gp= 0
-## 	.mask	0xc0000000,-4
-## 	.fmask	0x00000000,0
-## 	.set	noreorder
-## 	.set	nomacro
-## 	addiu	$sp,$sp,-16
-## 	sw	$31,12($sp)
-## 	sw	$fp,8($sp)
-## 	move	$fp,$sp
-## 	sw	$4,0($fp)
-## 	lw	$5,0($fp)
-## 	lui	$2,%hi($LC1)
-## 	addiu	$4,$2,%lo($LC1)
-## 	jal	pspDebugScreenPrintf
-## 	nop
-
-## 	nop
-## 	move	$sp,$fp
-## 	lw	$31,12($sp)
-## 	lw	$fp,8($sp)
-## 	addiu	$sp,$sp,16
-## 	jr	$31
-## 	nop
-
-## 	.set	macro
-## 	.set	reorder
-## 	.end	writechar
-## 	.size	writechar, .-writechar
-## 	.rdata
-## 	.align	2
-## $LC2:
-## 	.ascii	"%d\000"
-## 	.text
-## 	.align	2
-## 	.globl	writenum
-## 	.set	nomips16
-## 	.set	nomicromips
-## 	.ent	writenum
-## 	.type	writenum, @function
-## writenum:
-## 	.frame	$fp,16,$31		# vars= 8, regs= 2/0, args= 0, gp= 0
-## 	.mask	0xc0000000,-4
-## 	.fmask	0x00000000,0
-## 	.set	noreorder
-## 	.set	nomacro
-## 	addiu	$sp,$sp,-16
-## 	sw	$31,12($sp)
-## 	sw	$fp,8($sp)
-## 	move	$fp,$sp
-## 	sw	$4,0($fp)
-## 	lw	$5,0($fp)
-## 	lui	$2,%hi($LC2)
-## 	addiu	$4,$2,%lo($LC2)
-## 	jal	pspDebugScreenPrintf
-## 	nop
-
-## 	nop
-## 	move	$sp,$fp
-## 	lw	$31,12($sp)
-## 	lw	$fp,8($sp)
-## 	addiu	$sp,$sp,16
-## 	jr	$31
-## 	nop
-
-## 	.set	macro
-## 	.set	reorder
-## 	.end	writenum
-## 	.size	writenum, .-writenum
-## 	.rdata
-## 	.align	2
-## $LC3:
-## 	.ascii	"%s\000"
-## 	.text
-## 	.align	2
-## 	.globl	writestr
-## 	.set	nomips16
-## 	.set	nomicromips
-## 	.ent	writestr
-## 	.type	writestr, @function
-## writestr:
-## 	.frame	$fp,16,$31		# vars= 8, regs= 2/0, args= 0, gp= 0
-## 	.mask	0xc0000000,-4
-## 	.fmask	0x00000000,0
-## 	.set	noreorder
-## 	.set	nomacro
-## 	addiu	$sp,$sp,-16
-## 	sw	$31,12($sp)
-## 	sw	$fp,8($sp)
-## 	move	$fp,$sp
-## 	sw	$4,0($fp)
-## 	lw	$5,0($fp)
-## 	lui	$2,%hi($LC3)
-## 	addiu	$4,$2,%lo($LC3)
-## 	jal	pspDebugScreenPrintf
-## 	nop
-
-## 	li $a0,500000
-## 	jal sceKernelDelayThread
-
-## 	nop
-## 	move	$sp,$fp
-## 	lw	$31,12($sp)
-## 	lw	$fp,8($sp)
-## 	addiu	$sp,$sp,16
-## 	jr	$31
-## 	nop
-
-## 	.set	macro
-## 	.set	reorder
-## 	.end	writestr
-## 	.size	writestr, .-writestr
-## 	.align	2
-## 	.globl	idx
-## 	.section	.sbss,"aw",@nobits
-## 	.align	2
-## 	.type	idx, @object
-## 	.size	idx, 4
-## idx:
-## 	.space	4
-## 	.globl	input
-## 	.rdata
-## 	.align	2
-## $LC4:
-## 	.ascii	"(define (map proc lst)  (if (eq? lst '())     '()     (cons (proc (car lst)) (map proc (cdr lst))))) (map (lambda (x) (* x x)) '(1 2 3 4 5 6)) 'yahoooo\000"
-## 	.section	.sdata,"aw"
-## 	.align	2
-## 	.type	input, @object
-## 	.size	input, 4
-## input:
-## 	.word	$LC4
-## 	.text
-## 	.align	2
-## 	.globl	readchar
-## 	.set	nomips16
-## 	.set	nomicromips
-## 	.ent	readchar
-## 	.type	readchar, @function
-## readchar:
-## 	.frame	$fp,8,$31		# vars= 0, regs= 1/0, args= 0, gp= 0
-## 	.mask	0x40000000,-4
-## 	.fmask	0x00000000,0
-## 	.set	noreorder
-## 	.set	nomacro
-## 	addiu	$sp,$sp,-8
-## 	sw	$fp,4($sp)
-## 	move	$fp,$sp
-## 	lw	$3,%gp_rel(input)($28)
-## 	lw	$2,%gp_rel(idx)($28)
-## 	addiu	$4,$2,1
-## 	sw	$4,%gp_rel(idx)($28)
-## 	addu	$2,$3,$2
-## 	lb	$a0,0($2)
-## 	move	$sp,$fp
-## 	lw	$fp,4($sp)
-## 	addiu	$sp,$sp,8
-## 	jr	$31
-## 	nop
-
-## 	.set	macro
-## 	.set	reorder
-## 	.end	readchar
-## 	.size	readchar, .-readchar
-## 	.align	2
-## 	.globl	peekchar
-## 	.set	nomips16
-## 	.set	nomicromips
-## 	.ent	peekchar
-## 	.type	peekchar, @function
-## peekchar:
-## 	.frame	$fp,8,$31		# vars= 0, regs= 1/0, args= 0, gp= 0
-## 	.mask	0x40000000,-4
-## 	.fmask	0x00000000,0
-## 	.set	noreorder
-## 	.set	nomacro
-## 	addiu	$sp,$sp,-8
-## 	sw	$fp,4($sp)
-## 	move	$fp,$sp
-## 	lw	$2,%gp_rel(input)($28)
-## 	lw	$3,%gp_rel(idx)($28)
-## 	addu	$2,$2,$3
-## 	lb	$a0,0($2)
-## 	move	$sp,$fp
-## 	lw	$fp,4($sp)
-## 	addiu	$sp,$sp,8
-## 	jr	$31
-## 	nop
-
-## 	.set	macro
-## 	.set	reorder
-## 	.end	peekchar
-## 	.size	peekchar, .-peekchar
-########################
 	.text
 	.globl	peekchar
 peekchar:
@@ -257,12 +58,14 @@ readchar:
 	.text
 	.globl	scheme_main
 scheme_main:
-	la	REG_TOSPACE,TOP_OF_STACK
-	la	REG_FROMSPACE,TOP_OF_STACK + SPACE_SIZE
+	la	REG_TOSPACE,PAIR_MEM
+	la	REG_FROMSPACE,PAIR_MEM + SPACE_SIZE
 	move	REG_FREE,REG_TOSPACE
 	addi	$sp,$sp,-16
 	ZEROFRAME
 	sw	$ra,12($sp)
+	la	$t0,repl_sp
+	sw	$sp,($t0)
 	la	$a0,str_msg
 	jal	writestr
 	la	$a0,image_env
@@ -299,7 +102,8 @@ error:
 2:
 	li	$a0,'\n'
 	jal	writechar
-	li	$sp,TOP_OF_STACK - 16
+	la	$t0,repl_sp
+	lw	$sp,($t0)
 	j	1b
 
 
@@ -405,7 +209,7 @@ prim_lt:
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
 	slt	$a0,$a0,$a1
-	sll	$a0,$a0,2
+	sll	$a0,$a0,3
 	addi	$a0,$a0,FALSE
 	jr	$ra
 
@@ -430,7 +234,7 @@ prim_mul:
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
 	xori	$a0,$a0,TAG_FIXNUM
-	sra	$a1,$a1,2
+	sra	$a1,$a1,3
 	mul	$a0,$a0,$a1
 	ori	$a0,$a0,TAG_FIXNUM
 	jr	$ra
@@ -439,10 +243,10 @@ prim_quotient:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
-	sra	$a0,$a0,2
-	sra	$a1,$a1,2
+	sra	$a0,$a0,3
+	sra	$a1,$a1,3
 	div	$a0,$a0,$a1
-	sll	$a0,$a0,2
+	sll	$a0,$a0,3
 	ori	$a0,$a0,TAG_FIXNUM
 	jr	$ra
 
@@ -450,10 +254,10 @@ prim_remainder:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
-	sra	$a0,$a0,2
-	sra	$a1,$a1,2
+	sra	$a0,$a0,3
+	sra	$a1,$a1,3
 	rem	$a0,$a0,$a1
-	sll	$a0,$a0,2
+	sll	$a0,$a0,3
 	ori	$a0,$a0,TAG_FIXNUM
 	jr	$ra
 
@@ -559,14 +363,14 @@ prim_image:
 	blt	REG_TOSPACE,REG_FROMSPACE,1f
 	jal	gc
 1:
-	li	$t0,TOP_OF_STACK - 16
+	li	$t0,PAIR_MEM - 16
 	lw	$t0,8($t0)
 	la	$t1,image_env
 	sw	$t0,($t1)
 	la	$t1,image_free
 	sw	REG_FREE,($t1)
 	li	$a0,0
-	li	$a1,TOP_OF_STACK + SPACE_SIZE
+	li	$a1,PAIR_MEM + SPACE_SIZE
 	## XXX
 	#jal	image
 	la	$a0,SYM(ok)
@@ -908,9 +712,9 @@ apply:
 	li	$t1,TAG_PROCEDURE
 	bne	$t0,$t1,Lnot_proc
 	xori	$t0,$a0,TAG_PROCEDURE
-	la	$t1,TOP_OF_STACK
+	la	$t1,PAIR_MEM
 	blt	$t0,$t1,Lapply_primitive
-	la	$t1,TOP_OF_STACK + 2*SPACE_SIZE
+	la	$t1,PAIR_MEM + 2*SPACE_SIZE
 	bgt	$t0,$t1,Lapply_primitive
 	addi	$sp,$sp,-16
 	ZEROFRAME
@@ -1107,7 +911,7 @@ Lread_num:
 	beqz	$t2,3f
 	neg	$a0,$a0
 3:
-	sll	$a0,$a0,2
+	sll	$a0,$a0,3
 	ori	$a0,$a0,TAG_FIXNUM
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
@@ -1358,14 +1162,14 @@ Lend_of_list:
 	addi	$sp,$sp,16
 	j	writechar
 Lwrite_fixnum:
-	sra	$a0,$a0,2
+	sra	$a0,$a0,3
 	addi	$sp,$sp,16
 	j	writenum
 Lwrite_procedure:
 	xori	$a0,$a0,TAG_PROCEDURE
-	la	$t0,TOP_OF_STACK
+	la	$t0,PAIR_MEM
 	blt	$a0,$t0,Lwrite_primitive
-	la	$t0,TOP_OF_STACK + 2*SPACE_SIZE
+	la	$t0,PAIR_MEM + 2*SPACE_SIZE
 	bgt	$a0,$t0,Lwrite_primitive
 	sw	$a0,8($sp)
 	la	$a0,str_proc
@@ -1463,7 +1267,7 @@ gc:
 	#GC_ROOT($s5)
 	#GC_ROOT($s6)
 	addi	$t1,$sp,16
-	li	$t2,TOP_OF_STACK
+	li	$t2,PAIR_MEM
 Ltraverse_stack:
 	beq	$t1,$t2,Lgc_loop
 	lw	$a0,($t1)
@@ -1499,7 +1303,7 @@ relocate:
 1:
 	jr	$ra
 Lrelocate_procedure:
-	li	$t5,TOP_OF_STACK
+	li	$t5,PAIR_MEM
 	blt	$a0,$t5,1f
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
@@ -1528,8 +1332,10 @@ Lfound_broken_heart:
 	jr	$ra
 
 	.bss
+repl_sp:	.skip	4
 image_env:	.skip	4
 image_free:	.skip	4
+pair_memory:	.skip	2*SPACE_SIZE
 	.section	.rodata
 ext_alph_chars:	.string	"!$%&*+-./:<=>?@^_~"
 str_msg:	.string	"Scheme interpreter\n"
