@@ -204,6 +204,7 @@ make_initial_environment:
 	lw	$a1,($t0);	\
 	lw	$a0,($a0)
 
+	.align	3
 prim_eq:
 	DYADIC_ARGS
 Lcmp:
@@ -214,6 +215,7 @@ Lcmp:
 	li	$a0,FALSE
 	jr	$ra
 
+	.align	3
 prim_integerp:
 	lw	$a0,($a0)
 	andi	$a0,$a0,7
@@ -225,12 +227,14 @@ prim_integerp:
 	li	$a0,FALSE
 	jr	$ra
 
+	.align	3
 prim_num_eql:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
 	j	Lcmp
 
+	.align	3
 prim_lt:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
@@ -240,6 +244,7 @@ prim_lt:
 	addi	$a0,$a0,FALSE
 	jr	$ra
 
+	.align	3
 prim_add:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
@@ -248,6 +253,7 @@ prim_add:
 	add	$a0,$a0,$a1
 	jr	$ra
 
+	.align	3
 prim_sub:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
@@ -256,6 +262,7 @@ prim_sub:
 	sub	$a0,$a0,$a1
 	jr	$ra
 
+	.align	3
 prim_mul:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
@@ -266,6 +273,7 @@ prim_mul:
 	ori	$a0,$a0,TAG_FIXNUM
 	jr	$ra
 
+	.align	3
 prim_quotient:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
@@ -277,6 +285,7 @@ prim_quotient:
 	ori	$a0,$a0,TAG_FIXNUM
 	jr	$ra
 
+	.align	3
 prim_remainder:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
@@ -288,6 +297,7 @@ prim_remainder:
 	ori	$a0,$a0,TAG_FIXNUM
 	jr	$ra
 
+	.align	3
 prim_pairp:
 	lw	$a0,($a0)
 	andi	$t0,$a0,7
@@ -299,24 +309,28 @@ prim_pairp:
 	li	$a0,FALSE
 	jr	$ra
 
+	.align	3
 prim_cons:
 	lw	$t0,4($a0)
 	lw	$t0,($t0)
 	sw	$t0,4($a0)
 	jr	$ra
 
+	.align	3
 prim_car:
 	lw	$a0,($a0)
 	CHECK_PAIR($a0)
 	lw	$a0,($a0)
 	jr	$ra
 
+	.align	3
 prim_cdr:
 	lw	$a0,($a0)
 	CHECK_PAIR($a0)
 	lw	$a0,4($a0)
 	jr	$ra
 
+	.align	3
 prim_set_car:
 	DYADIC_ARGS
 	CHECK_PAIR($a0)
@@ -324,6 +338,7 @@ prim_set_car:
 	la	$a0,SYM(ok)
 	jr	$ra
 
+	.align	3
 prim_set_cdr:
 	DYADIC_ARGS
 	CHECK_PAIR($a0)
@@ -331,9 +346,11 @@ prim_set_cdr:
 	la	$a0,SYM(ok)
 	jr	$ra
 
+	.align	3
 prim_list:
 	jr	$ra
 
+	.align	3
 prim_symbolp:
 	lw	$a0,($a0)
 	andi	$t0,$a0,7
@@ -349,6 +366,7 @@ prim_symbolp:
 	li	$a0,FALSE
 	jr	$ra
 
+	.align	3
 prim_procedurep:
 	lw	$a0,($a0)
 	andi	$t0,$a0,7
@@ -362,6 +380,7 @@ prim_procedurep:
 
 prim_read = read
 
+	.align	3
 prim_write:
 	lw	$a0,($a0)
 	addi	$sp,$sp,-16
@@ -372,6 +391,7 @@ prim_write:
 	addi	$sp,$sp,16
 	jr	$ra
 
+	.align	3
 prim_newline:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
@@ -382,6 +402,7 @@ prim_newline:
 	addi	$sp,$sp,16
 	jr	$ra
 
+	.align	3
 prim_image:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
@@ -856,6 +877,7 @@ define_variable:
 
 ### Reader and symbols
 
+	.align	3		# primitive
 	.globl	read
 read:
 	addi	$sp,$sp,-16
