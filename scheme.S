@@ -392,6 +392,22 @@ prim_write:
 	jr	$ra
 
 	.align	3
+prim_display:
+	lw	$a0,($a0)
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	li	$t0,1
+	la	$t1,printer_display_flag
+	sw	$t0,($t1)
+	jal	write
+	la	$t1,printer_display_flag
+	sw	$zero,($t1)
+	la	$a0,SYM(ok)
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
+
+	.align	3
 prim_newline:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
@@ -1165,6 +1181,10 @@ str_cpy:
 
 ### Printer
 
+	.bss
+printer_display_flag:	.skip 4
+	.text
+
 	.globl	write
 write:
 	addi	$sp,$sp,-16
@@ -1268,6 +1288,9 @@ Lwrite_symbol:
 	addi	$sp,$sp,16
 	j	writestr
 Lwrite_string:
+	la	$t0,printer_display_flag
+	lw	$t0,($t0)
+	bnez	$t0,1f
 	sw	$a0,8($sp)
 	li	$a0,'\"'
 	jal	writechar
@@ -1280,6 +1303,11 @@ Lwrite_string:
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
+1:
+	xori	$a0,$a0,TAG_STRING
+	addi	$a0,$a0,5
+	addi	$sp,$sp,16
+	j	writestr
 
 
 ### Strings
@@ -1493,6 +1521,7 @@ Lmark_string:
 repl_sp:	.skip	4
 image_env:	.skip	4
 image_free:	.skip	4
+	.align	3
 pair_memory:	.skip	2*SPACE_SIZE
 all_strings:	.skip	4
 	.section	.rodata
@@ -1531,8 +1560,9 @@ prim_addrs:
 	.word	prim_procedurep
 	.word	prim_read
 	.word	prim_write
+	.word	prim_display
 	.word	prim_newline
-	.word	prim_image
+	#.word	prim_image
 
 	.section	.data
 obarray:
@@ -1565,6 +1595,7 @@ obarray:
 	MAKE_SYM("procedure?")
 	MAKE_SYM("read")
 	MAKE_SYM("write")
+	MAKE_SYM("display")
 	MAKE_SYM("newline")
-	MAKE_SYM("image")
+#	MAKE_SYM("image")
 	.skip	1040
