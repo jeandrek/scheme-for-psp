@@ -1,5 +1,6 @@
 To do
 
+- fix LET
 - file I/O procedures
 - more types
 - better checking
@@ -11,6 +12,8 @@ To do
 
 Possibly:
 
+- big ints (fixnums are restricted to 2^29)
+  flonums; exact rationals
 - rewrite, either incrementally or entirely, in C for
   readability/maintability
 - graphics
