@@ -5,23 +5,31 @@
 #include <pspctrl.h>
 #include <psputility.h>
 #include <string.h>
+#include <stdio.h>
 
 PSP_MODULE_INFO("scheme", 0, 1, 1);
 
-int
-exit_callback(int arg1, int arg2, void *argp)
+void	screen_readline(void);
+char	boot_scm_path[] = "ms0:/boot.scm";
+
+
+
+FILE *current_input_file = NULL;
+/*FILE *current_output_file = NULL;*/
+
+void
+open_as_current_input_file(char *path)
 {
+	current_input_file = fopen(path, "r");
 }
 
-int
-callback_thread(SceSize args, void *arg)
+void
+close_current_input_file(void)
 {
-	int cbid;
-
-	cbid = sceKernelCreateCallback("exit_callback", exit_callback, NULL);
-	sceKernelRegisterExitCallback(cbid);
-	sceKernelSleepThreadCB();
+	fclose(current_input_file);
+	current_input_file = NULL;
 }
+
 
 void
 writechar(int c)
@@ -39,16 +47,43 @@ writestr(char *s)
 	pspDebugScreenPrintf("%s", s);
 }
 
-void
-image(void)
-{
-}
-
 char input[100];
 size_t idx = 0;
 
+int
+C_peekchar(void)
+{
+	if (current_input_file) {
+		int c = getc(current_input_file);
+		ungetc(c, current_input_file);
+		return c;
+	}
+
+	if (input[idx] > 0) {
+		return input[idx];
+	} else {
+		screen_readline();
+		return input[0];
+	}
+}
+
+int
+C_readchar(void)
+{
+	if (current_input_file) {
+		int c = getc(current_input_file);
+		return c;
+	}
+
+	int c = C_peekchar();
+	idx++;
+	return c;
+}
+
+
+
 void
-readline(void)
+screen_readline(void)
 {
 	int x = pspDebugScreenGetX(), y = pspDebugScreenGetY();
 	SceCtrlLatch latch;
@@ -126,25 +161,22 @@ readline(void)
 	}
 }
 
+
+
 int
-C_peekchar(void)
+exit_callback(int arg1, int arg2, void *argp)
 {
-	if (input[idx] > 0) {
-		return input[idx];
-	} else {
-		readline();
-		return input[0];
-	}
 }
 
 int
-C_readchar(void)
+callback_thread(SceSize args, void *arg)
 {
-	int c = C_peekchar();
-	idx++;
-	return c;
-}
+	int cbid;
 
+	cbid = sceKernelCreateCallback("exit_callback", exit_callback, NULL);
+	sceKernelRegisterExitCallback(cbid);
+	sceKernelSleepThreadCB();
+}
 
 void scheme_main(void);
 

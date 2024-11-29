@@ -1,3 +1,6 @@
+#### A simple Scheme interpreter
+#### With a SICP-esque Cheney's algorithm garbage collector
+
 #### Copyright (c) 2024 Jeandre Kruger
 #### All rights reserved.
 
@@ -21,9 +24,6 @@
 #### LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 #### NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #### SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-#### A simple Scheme interpreter
-#### With a SICP-esque Cheney's algorithm garbage collector
 
 ### (Strings are allocated using malloc and swept by GC, possibly
 ### not ideal)
@@ -62,6 +62,8 @@
 #define NAME_SYM(n1, n2)	.align 4; sym_ ## n1 = . + 3; .string n2
 #define MAKE_SYM(name)		.align 4; .string name
 
+
+### Glue
 	.text
 	.globl	peekchar
 peekchar:
@@ -82,7 +84,7 @@ readchar:
 	addi	$sp,$sp,16
 	jr	$ra
 
-	.text
+
 	.globl	scheme_main
 scheme_main:
 	la	REG_TOSPACE,PAIR_MEM
@@ -91,8 +93,11 @@ scheme_main:
 	addi	$sp,$sp,-16
 	ZEROFRAME
 	sw	$ra,12($sp)
-	la	$t0,repl_sp
+	la	$t0,error_sp
 	sw	$sp,($t0)
+	la	$t0,error_pc
+	la	$t1,Lprompt
+	sw	$t1,($t0)
 	la	$a0,str_msg
 	jal	writestr
 	la	$a0,image_env
@@ -105,21 +110,27 @@ Lnot_imaged:
 	la	$a0,str_fresh
 	jal	writestr
 	jal	make_initial_environment
+	sw	$a0,8($sp)
+	move	$a1,$a0
+	la	$a0,boot_scm_path
+	jal	load		# XXX error handling
+	lw	$a0,8($sp)
 Lready:
 	sw	$a0,8($sp)	# Saved for reason of error
-1:
+Lprompt:
 	li	$a0,'>'
 	jal	writechar
 	jal	read
 	lw	$a1,8($sp)
 	jal	eval
 	la	$t0,SYM(ok)
-	beq	$a0,$t0,1b
+	beq	$a0,$t0,Lprompt
 	jal	write
 	li	$a0,'\n'
 	jal	writechar
-	j	1b
+	j	Lprompt
 
+	.globl	error
 error:
 	sw	$a1,12($sp)
 	jal	writestr
@@ -129,9 +140,30 @@ error:
 2:
 	li	$a0,'\n'
 	jal	writechar
-	la	$t0,repl_sp
+	la	$t0,error_sp
 	lw	$sp,($t0)
+	la	$t0,error_pc
+	lw	$t0,($t0)
+	jr	$t0
+
+	.globl	load
+load:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	sw	$a1,8($sp)
+	jal	open_as_current_input_file
+1:
+	jal	read
+	la	$t0,SYM(Eof)
+	beq	$a0,$t0,2f
+	lw	$a1,8($sp)
+	jal	eval
 	j	1b
+2:
+	jal	close_current_input_file
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
 
 
 ### Initial environment and primitives
@@ -914,7 +946,9 @@ Lwhitespace:
 	li	$t1,'+'
 	bne	$a0,$t1,2f
 	move	$t0,$a0
+	sw	$t0,8($sp)
 	jal	peekchar
+	lw	$t0,8($sp)
 	move	$t1,$a0
 	move	$a0,$t0
 	li	$t2,'0'
@@ -928,7 +962,9 @@ Lwhitespace:
 	li	$t1,'-'
 	bne	$a0,$t1,3f
 	move	$t0,$a0
+	sw	$t0,8($sp)
 	jal	peekchar
+	lw	$t0,8($sp)
 	move	$t1,$a0
 	move	$a0,$t0
 	li	$t2,'0'
@@ -952,6 +988,12 @@ Lwhitespace:
 	beq	$a0,$t1,Lread_string
 	li	$t1,'#'
 	beq	$a0,$t1,Lread_hash
+	li	$t1,-1
+	bne	$a0,$t1,Lunexpected_char
+	la	$a0,SYM(Eof)
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
 Lunexpected_char:
 	la	$a0,str_bad_read
 	li	$a1,0
@@ -975,6 +1017,7 @@ Lread_num:
 	add	$t0,$t0,$a0
 	j	1b
 2:
+	lw	$t0,8($sp)
 	lw	$t2,4($sp)
 	move	$a0,$t0
 	beqz	$t2,3f
@@ -1518,7 +1561,8 @@ Lmark_string:
 	jr	$ra
 
 	.bss
-repl_sp:	.skip	4
+error_sp:	.skip	4
+error_pc:	.skip	4
 image_env:	.skip	4
 image_free:	.skip	4
 	.align	3
@@ -1563,9 +1607,11 @@ prim_addrs:
 	.word	prim_display
 	.word	prim_newline
 	#.word	prim_image
+	#.word	prim_load
 
 	.section	.data
 obarray:
+	NAME_SYM(Eof, "Eof")	# uninternable
 	NAME_SYM(quote, "quote")
 	NAME_SYM(lambda, "lambda")
 	NAME_SYM(if, "if")
@@ -1597,5 +1643,6 @@ obarray:
 	MAKE_SYM("write")
 	MAKE_SYM("display")
 	MAKE_SYM("newline")
-#	MAKE_SYM("image")
-	.skip	1040
+	#MAKE_SYM("image")
+	#MAKE_SYM("load")
+	.skip	1024
