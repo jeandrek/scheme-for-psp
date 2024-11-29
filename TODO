@@ -1,0 +1,17 @@
+To do
+
+- file I/O procedures
+- more types
+- better checking
+- better obarray/no symbol length limit
+- no reader string limit
+- target most (all?) of R4/R5
+- control
+
+Possibly:
+
+- rewrite, either incrementally or entirely, in C for
+  readability/maintability
+- graphics
+- dynamic linking?
+- more platforms (POSIX on MIPS, other consoles)
