@@ -488,14 +488,14 @@ eval:
 	beq	$t0,$t1,Leval_self_evaluating
 	li	$t1,TAG_SYMBOL
 	bne	$t0,$t1,2f
-	li	$t0,TRUE
-	beq	$a0,$t0,Leval_self_evaluating
 	li	$t0,FALSE
 	beq	$a0,$t0,Leval_self_evaluating
 	j	Leval_variable
 2:
 	li	$t1,TAG_STRING
 	beq	$t0,$t1,Leval_self_evaluating
+	li	$t0,TRUE
+	beq	$a0,$t0,Leval_self_evaluating
 	move	$a1,$a0
 	la	$a0,str_bad_exp
 	j	error
@@ -1015,6 +1015,7 @@ Lread_num:
 	li	$t1,10
 	mul	$t0,$t0,$t1
 	add	$t0,$t0,$a0
+	sw	$t0,8($sp)
 	j	1b
 2:
 	lw	$t0,8($sp)
