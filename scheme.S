@@ -1223,6 +1223,7 @@ str_cpy:
 	addi	$a1,$a1,1
 	j	str_cpy
 1:
+	sb	$zero,($a0)
 	jr	$ra
 
 
@@ -1365,6 +1366,7 @@ alloc_string:
 	sw	$a1,8($sp)
 	addi	$a0,$a0,6
 	sw	$a0,4($sp)
+	sw	$zero,($sp)
 	jal	malloc		## XXX alignment 2^3
 	bnez	$v0,1f
 	jal	gc
