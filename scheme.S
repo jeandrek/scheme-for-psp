@@ -87,6 +87,8 @@ readchar:
 
 	.globl	scheme_main
 scheme_main:
+	la	$t0,gc_top_of_stack
+	sw	$sp,($t0)
 	la	REG_TOSPACE,PAIR_MEM
 	la	REG_FROMSPACE,PAIR_MEM + SPACE_SIZE
 	move	REG_FREE,REG_TOSPACE
@@ -149,6 +151,7 @@ error:
 	.globl	load
 load:
 	addi	$sp,$sp,-16
+	ZEROFRAME
 	sw	$ra,12($sp)
 	sw	$a1,8($sp)
 	jal	open_as_current_input_file
@@ -1463,7 +1466,8 @@ gc:
 	#GC_ROOT($s5)
 	#GC_ROOT($s6)
 	addi	$t1,$sp,16
-	li	$t2,PAIR_MEM
+	la	$t2,gc_top_of_stack
+	lw	$t2,($t2)
 Ltraverse_stack:
 	beq	$t1,$t2,Lgc_loop
 	lw	$a0,($t1)
@@ -1528,8 +1532,10 @@ relocate:
 1:
 	jr	$ra
 Lrelocate_procedure:
-	li	$t5,PAIR_MEM
+	la	$t5,PAIR_MEM
 	blt	$a0,$t5,1f
+	la	$t5,PAIR_MEM + 2*SPACE_SIZE
+	bgt	$a0,$t5,1f
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	xori	$a0,$a0,TAG_PROCEDURE
@@ -1557,11 +1563,13 @@ Lfound_broken_heart:
 	jr	$ra
 Lmark_string:
 	xori	$a0,$a0,TAG_STRING
-	li	$t0,1
-	sb	$t0,($a0)
+	li	$t5,1
+	sb	$t5,($a0)
+	ori	$a0,$a0,TAG_STRING
 	jr	$ra
 
 	.bss
+gc_top_of_stack:.skip	4
 error_sp:	.skip	4
 error_pc:	.skip	4
 image_env:	.skip	4
