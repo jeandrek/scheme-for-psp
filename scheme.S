@@ -1467,11 +1467,13 @@ gc:
 	#GC_ROOT($s6)
 	addi	$t1,$sp,16
 	la	$t2,gc_top_of_stack
+	la	$t3,PAIR_MEM + 2*SPACE_SIZE
 	lw	$t2,($t2)
 Ltraverse_stack:
 	beq	$t1,$t2,Lgc_loop
 	lw	$a0,($t1)
-	blt	$a0,$t2,1f
+	blt	$a0,REG_FROMSPACE,1f
+	bgt	$a0,$t3,1f
 	jal	relocate
 	sw	$a0,($t1)
 1:
