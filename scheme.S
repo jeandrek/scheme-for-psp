@@ -42,7 +42,7 @@
 #define REG_TOSPACE	$s6
 #define REG_FREE	$s7
 #define PAIR_MEM	pair_memory
-#define SPACE_SIZE	0x1000
+#define SPACE_SIZE	0x10000
 
 #define SYMBOL_LENGTH	16
 
@@ -1474,7 +1474,7 @@ Ltraverse_stack:
 	addi	$t1,$t1,4
 	j	Ltraverse_stack
 Lgc_loop:
-	beq	$t0,REG_FREE,Lsweep_strings
+	beq	$t0,REG_FREE,1f
 	lw	$t1,($t0)
 	lw	$t2,4($t0)
 	move	$a0,$t1
