@@ -50,7 +50,7 @@
 #define TRUE		7
 #define FALSE		3
 
-#define NUM_PRIMITIVES	22
+#define NUM_PRIMITIVES	23
 
 # Every stack frame reachable by GC must have no dead values.
 #define ZEROFRAME		\
@@ -114,6 +114,8 @@ Lnot_imaged:
 	jal	make_initial_environment
 	sw	$a0,8($sp)
 	move	$a1,$a0
+	la	$t0,global_env
+	sw	$a1,($t0)	# For LOAD
 	la	$a0,boot_scm_path
 	jal	load		# XXX error handling
 	lw	$a0,8($sp)
@@ -231,6 +233,15 @@ make_initial_environment:
 	beq	$t0,$t1,1f;		\
 	move	$a1,x;			\
 	la	$a0,str_type_fixnum;	\
+	j	error;			\
+1:
+
+#define CHECK_STRING(x) 		\
+	andi	$t0,x,7;		\
+	li	$t1,TAG_STRING;		\
+	beq	$t0,$t1,1f;		\
+	move	$a1,x;			\
+	la	$a0,str_type_string;	\
 	j	error;			\
 1:
 
@@ -472,6 +483,23 @@ prim_image:
 	li	$a1,PAIR_MEM + SPACE_SIZE
 	## XXX
 	#jal	image
+	la	$a0,SYM(ok)
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
+
+	.align	3
+prim_load:
+	lw	$a0,($a0)
+	CHECK_STRING($a0)
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	ZEROFRAME
+	xori	$a0,$a0,TAG_STRING
+	addi	$a0,$a0,5
+	la	$a1,global_env
+	lw	$a1,($a1)
+	jal	load
 	la	$a0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
@@ -991,7 +1019,7 @@ Lwhitespace:
 	beq	$a0,$t1,Lread_string
 	li	$t1,'#'
 	beq	$a0,$t1,Lread_hash
-	li	$t1,'\;'
+	li	$t1,';'
 	beq	$a0,$t1,Lread_comment
 	li	$t1,-1
 	bne	$a0,$t1,Lunexpected_char
@@ -1588,6 +1616,7 @@ Lmark_string:
 gc_top_of_stack:.skip	4
 error_sp:	.skip	4
 error_pc:	.skip	4
+global_env:	.skip	4
 image_env:	.skip	4
 image_free:	.skip	4
 	.align	3
@@ -1607,6 +1636,7 @@ str_not_proc:	.string	"Not a procedure: "
 str_out_of_mem:	.string	"Out of memory"
 str_type_pair:	.string	"Expected a pair: "
 str_type_fixnum:.string	"Expected a fixnum: "
+str_type_string:.string	"Expected a string: "
 
 prim_addrs:
 	.word	prim_eq
@@ -1632,7 +1662,7 @@ prim_addrs:
 	.word	prim_display
 	.word	prim_newline
 	#.word	prim_image
-	#.word	prim_load
+	.word	prim_load
 
 	.section	.data
 obarray:
@@ -1669,5 +1699,5 @@ obarray:
 	MAKE_SYM("display")
 	MAKE_SYM("newline")
 	#MAKE_SYM("image")
-	#MAKE_SYM("load")
-	.skip	1024
+	MAKE_SYM("load")
+	.skip	1008
