@@ -991,6 +991,8 @@ Lwhitespace:
 	beq	$a0,$t1,Lread_string
 	li	$t1,'#'
 	beq	$a0,$t1,Lread_hash
+	li	$t1,'\;'
+	beq	$a0,$t1,Lread_comment
 	li	$t1,-1
 	bne	$a0,$t1,Lunexpected_char
 	la	$a0,SYM(Eof)
@@ -1140,6 +1142,16 @@ Lread_hash:
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
+
+Lread_comment:
+	jal	readchar
+	li	$t0,'\n'
+	beq	$a0,$t0,1f
+	li	$t0,-1
+	beq	$a0,$t0,1f
+	j	Lread_comment
+1:
+	j	Lwhitespace
 
 is_nondigit_symbol_char:
 	li	$t0,'a'
