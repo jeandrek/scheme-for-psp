@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "scheme.h"
+
 PSP_MODULE_INFO("scheme", 0, 1, 1);
 
 void	screen_readline(void);
@@ -21,6 +23,8 @@ void
 open_as_current_input_file(char *path)
 {
 	current_input_file = fopen(path, "r");
+	if (current_input_file == NULL)
+		error("Cannot load specified file", NULL);
 }
 
 void
@@ -29,7 +33,6 @@ close_current_input_file(void)
 	fclose(current_input_file);
 	current_input_file = NULL;
 }
-
 
 void
 writechar(int c)
@@ -177,8 +180,6 @@ callback_thread(SceSize args, void *arg)
 	sceKernelRegisterExitCallback(cbid);
 	sceKernelSleepThreadCB();
 }
-
-void scheme_main(void);
 
 int
 main(void)

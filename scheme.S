@@ -153,19 +153,25 @@ error:
 	.globl	load
 load:
 	addi	$sp,$sp,-16
-	ZEROFRAME
 	sw	$ra,12($sp)
-	sw	$a1,8($sp)
+	sw	$zero,($sp)
+	la	$t0,current_input_file
+	lw	$t0,($t0)
+	sw	$t0,8($sp)
+	sw	$a1,4($sp)
 	jal	open_as_current_input_file
 1:
 	jal	read
 	la	$t0,SYM(Eof)
 	beq	$a0,$t0,2f
-	lw	$a1,8($sp)
+	lw	$a1,4($sp)
 	jal	eval
 	j	1b
 2:
 	jal	close_current_input_file
+	lw	$t1,8($sp)
+	la	$t0,current_input_file
+	sw	$t1,($t0)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -1666,7 +1672,7 @@ prim_addrs:
 
 	.section	.data
 obarray:
-	NAME_SYM(Eof, "Eof")	# uninternable
+	NAME_SYM(Eof, "Eof")	# unreadable
 	NAME_SYM(quote, "quote")
 	NAME_SYM(lambda, "lambda")
 	NAME_SYM(if, "if")
