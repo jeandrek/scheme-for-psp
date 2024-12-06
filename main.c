@@ -16,22 +16,22 @@ char	boot_scm_path[] = "ms0:/boot.scm";
 
 
 
-FILE *current_input_file = NULL;
+/*FILE *current_input_file = NULL;*/
 /*FILE *current_output_file = NULL;*/
 
-void
-open_as_current_input_file(char *path)
+FILE *
+open_input_file(char *path)
 {
-	current_input_file = fopen(path, "r");
-	if (current_input_file == NULL)
+	FILE *f = fopen(path, "r");
+	if (f == NULL)
 		error("Cannot load specified file", NULL);
+	return f;
 }
 
 void
-close_current_input_file(void)
+close_input_file(FILE *f)
 {
-	fclose(current_input_file);
-	current_input_file = NULL;
+	fclose(f);
 }
 
 void
@@ -54,11 +54,11 @@ char input[100];
 size_t idx = 0;
 
 int
-C_peekchar(void)
+C_peekchar(FILE *input_file)
 {
-	if (current_input_file) {
-		int c = getc(current_input_file);
-		ungetc(c, current_input_file);
+	if (input_file) {
+		int c = getc(input_file);
+		ungetc(c, input_file);
 		return c;
 	}
 
@@ -71,14 +71,14 @@ C_peekchar(void)
 }
 
 int
-C_readchar(void)
+C_readchar(FILE *input_file)
 {
-	if (current_input_file) {
-		int c = getc(current_input_file);
+	if (input_file) {
+		int c = getc(input_file);
 		return c;
 	}
 
-	int c = C_peekchar();
+	int c = C_peekchar(NULL);
 	idx++;
 	return c;
 }

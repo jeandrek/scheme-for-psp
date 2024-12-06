@@ -124,6 +124,7 @@ Lready:
 Lprompt:
 	li	$a0,'>'
 	jal	writechar
+	li	$a0,0
 	jal	read
 	lw	$a1,8($sp)
 	jal	eval
@@ -155,23 +156,21 @@ load:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	sw	$zero,($sp)
-	la	$t0,current_input_file
-	lw	$t0,($t0)
-	sw	$t0,8($sp)
 	sw	$a1,4($sp)
-	jal	open_as_current_input_file
+	jal	open_input_file
+	sw	$v0,8($sp)
+	move	$a0,$v0
 1:
 	jal	read
 	la	$t0,SYM(Eof)
 	beq	$a0,$t0,2f
 	lw	$a1,4($sp)
 	jal	eval
+	lw	$a0,8($sp)
 	j	1b
 2:
-	jal	close_current_input_file
-	lw	$t1,8($sp)
-	la	$t0,current_input_file
-	sw	$t1,($t0)
+	lw	$a0,8($sp)
+	jal	close_input_file
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -430,7 +429,10 @@ prim_procedurep:
 	li	$a0,FALSE
 	jr	$ra
 
-prim_read = read
+	.align	3
+prim_read:
+	li	$a0,0
+	j	read
 
 	.align	3
 prim_write:
@@ -962,13 +964,16 @@ define_variable:
 
 ### Reader and symbols
 
-	.align	3		# primitive
 	.globl	read
 read:
 	addi	$sp,$sp,-16
-	ZEROFRAME
 	sw	$ra,12($sp)
+	sw	$s0,8($sp)
+	sw	$zero,4($sp)
+	sw	$zero,($sp)
+	move	$s0,$a0
 Lwhitespace:
+	move	$a0,$s0
 	jal	readchar
 	li	$t1,' '
 	beq	$a0,$t1,Lwhitespace
@@ -983,15 +988,17 @@ Lwhitespace:
 	li	$t1,'+'
 	bne	$a0,$t1,2f
 	move	$t0,$a0
-	sw	$t0,8($sp)
+	sw	$t0,4($sp)
+	move	$a0,$s0
 	jal	peekchar
-	lw	$t0,8($sp)
+	lw	$t0,4($sp)
 	move	$t1,$a0
 	move	$a0,$t0
 	li	$t2,'0'
 	blt	$t1,$t2,2f
 	li	$t2,'9'
 	bgt	$t1,$t2,Lread_symbol
+	move	$a0,$s0
 	jal	readchar
 	li	$t2,0
 	j	Lread_num
@@ -999,23 +1006,25 @@ Lwhitespace:
 	li	$t1,'-'
 	bne	$a0,$t1,3f
 	move	$t0,$a0
-	sw	$t0,8($sp)
+	sw	$t0,4($sp)
+	move	$a0,$s0
 	jal	peekchar
-	lw	$t0,8($sp)
+	lw	$t0,4($sp)
 	move	$t1,$a0
 	move	$a0,$t0
 	li	$t2,'0'
 	blt	$t1,$t2,3f
 	li	$t2,'9'
 	bgt	$t1,$t2,Lread_symbol
+	move	$a0,$s0
 	jal	readchar
 	li	$t2,1
 	j	Lread_num
 3:
-	sw	$a0,8($sp)
+	sw	$a0,4($sp)
 	jal	is_nondigit_symbol_char
 	bnez	$a0,Lread_symbol
-	lw	$a0,8($sp)
+	lw	$a0,4($sp)
 7:
 	li	$t1,'('
 	beq	$a0,$t1,Lread_list
@@ -1030,6 +1039,7 @@ Lwhitespace:
 	li	$t1,-1
 	bne	$a0,$t1,Lunexpected_char
 	la	$a0,SYM(Eof)
+	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -1040,37 +1050,40 @@ Lunexpected_char:
 
 Lread_num:
 	addi	$t0,$a0,-'0'
-	sw	$t0,8($sp)
-	sw	$t2,4($sp)
+	sw	$t0,4($sp)
+	sw	$t2,($sp)
 1:
+	move	$a0,$s0
 	jal	peekchar
 	li	$t1,'0'
 	blt	$a0,$t1,2f
 	li	$t1,'9'
 	bgt	$a0,$t1,2f
+	move	$a0,$s0
 	jal	readchar
-	lw	$t0,8($sp)
+	lw	$t0,4($sp)
 	addi	$a0,$a0,-'0'
 	li	$t1,10
 	mul	$t0,$t0,$t1
 	add	$t0,$t0,$a0
-	sw	$t0,8($sp)
+	sw	$t0,4($sp)
 	j	1b
 2:
-	lw	$t0,8($sp)
-	lw	$t2,4($sp)
+	lw	$t0,4($sp)
+	lw	$t2,($sp)
 	move	$a0,$t0
 	beqz	$t2,3f
 	neg	$a0,$a0
 3:
 	sll	$a0,$a0,3
 	ori	$a0,$a0,TAG_FIXNUM
+	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
 
 Lread_symbol:
-	lw	$a0,8($sp)
+	lw	$a0,4($sp)
 	li	$t1,'A'
 	blt	$a0,$t1,1f
 	li	$t1,'Z'
@@ -1081,17 +1094,19 @@ Lread_symbol:
 	sb	$a0,($sp)
 	addi	$t0,$sp,1
 2:
-	sw	$t0,24($sp)
+	sw	$t0,20($sp)
+	move	$a0,$s0
 	jal	peekchar
-	sw	$a0,20($sp)
 	jal	is_nondigit_symbol_char
 	bnez	$a0,Lconsume
-	lw	$a0,20($sp)
+	move	$a0,$s0
+	jal	peekchar	# XXX
 	li	$t1,'0'
 	blt	$a0,$t1,4f
 	li	$t1,'9'
 	bgt	$a0,$t1,4f
 Lconsume:
+	move	$a0,$s0
 	jal	readchar
 	li	$t1,'A'
 	blt	$a0,$t1,3f
@@ -1099,15 +1114,16 @@ Lconsume:
 	bgt	$a0,$t1,3f
 	addi	$a0,$a0,32
 3:
-	lw	$t0,24($sp)
+	lw	$t0,20($sp)
 	sb	$a0,($t0)
 	addi	$t0,$t0,1
 	j	2b
 4:
-	lw	$t0,24($sp)
+	lw	$t0,20($sp)
 	sb	$zero,($t0)
 	move	$a0,$sp
 	jal	intern
+	lw	$s0,24($sp)
 	lw	$ra,28($sp)
 	addi	$sp,$sp,32
 	jr	$ra
@@ -1115,54 +1131,63 @@ Lconsume:
 Lread_list:
 	li	$t0,0
 1:
-	sw	$t0,8($sp)
+	sw	$t0,4($sp)
+	move	$a0,$s0
 	jal	peekchar
 	li	$t1,')'
 	beq	$a0,$t1,2f
+	move	$a0,$s0
 	jal	read
-	lw	$a1,8($sp)
+	lw	$a1,4($sp)
 	jal	cons
 	move	$t0,$a0
 	j	1b
 2:
+	move	$a0,$s0
 	jal	readchar
-	lw	$a0,8($sp)
+	lw	$a0,4($sp)
+	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	j	nreverse
 
 Lread_quote:
+	move	$a0,$s0
 	jal	read
 	li	$a1,0
 	jal	cons
 	move	$a1,$a0
 	la	$a0,SYM(quote)
+	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	j	cons
 
 Lread_string:
 	addi	$sp,$sp,-32
-	sw	$sp,40($sp)
+	sw	$sp,36($sp)
 1:
+	move	$a0,$s0
 	jal	readchar
 	li	$t0,'\"'
-	lw	$t1,40($sp)
+	lw	$t1,36($sp)
 	beq	$a0,$t0,2f
 	sb	$a0,($t1)
 	addi	$t1,$t1,1
-	sw	$t1,40($sp)
+	sw	$t1,36($sp)
 	j	1b
 2:
 	sb	$zero,($t1)
 	move	$a1,$sp
 	sub	$a0,$t1,$a1
 	jal	alloc_string
+	lw	$s0,40($sp)
 	lw	$ra,44($sp)
 	addi	$sp,$sp,48
 	jr	$ra
 
 Lread_hash:
+	move	$a0,$s0
 	jal	readchar
 	li	$t0,'t'
 	bne	$a0,$t0,1f
@@ -1173,11 +1198,13 @@ Lread_hash:
 	bne	$a0,$t0,Lunexpected_char
 	li	$a0,FALSE
 2:
+	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
 
 Lread_comment:
+	move	$a0,$s0
 	jal	readchar
 	li	$t0,'\n'
 	beq	$a0,$t0,1f
