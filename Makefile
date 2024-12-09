@@ -4,6 +4,8 @@ OBJS = main.o scheme.o
 
 EXTRA_TARGETS = EBOOT.PBP
 
+CFLAGS = -g
+
 #BUILD_PRX=1
 
 LIBS =

@@ -50,7 +50,7 @@
 #define TRUE		7
 #define FALSE		3
 
-#define NUM_PRIMITIVES	23
+#define NUM_PRIMITIVES	25
 
 # Every stack frame reachable by GC must have no dead values.
 #define ZEROFRAME		\
@@ -509,6 +509,28 @@ prim_load:
 	lw	$a1,($a1)
 	jal	load
 	la	$a0,SYM(ok)
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
+
+	.align	3
+prim_psp_clear:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	jal	pspDebugScreenClear
+	la	$a0,SYM(ok)
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
+
+	.align	3
+prim_psp_wait_button:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	jal	psp_wait_button
+	la	$a0,SYM(x)
+	sll	$v0,$v0,4
+	add	$a0,$a0,$v0
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -1456,8 +1478,7 @@ alloc_string:
 	lw	$t1,($t0)
 	sw	$t1,($v0)
 	sw	$v0,($t0)
-	addi	$t0,$v0,4
-	sb	$zero,($t0)	## mark
+	sb	$zero,4($v0)	## mark
 	lw	$a1,8($sp)
 	addi	$a0,$v0,5
 	jal	str_cpy
@@ -1641,7 +1662,7 @@ Lfound_broken_heart:
 Lmark_string:
 	xori	$a0,$a0,TAG_STRING
 	li	$t5,1
-	sb	$t5,($a0)
+	sb	$t5,4($a0)
 	ori	$a0,$a0,TAG_STRING
 	jr	$ra
 
@@ -1696,6 +1717,8 @@ prim_addrs:
 	.word	prim_newline
 	#.word	prim_image
 	.word	prim_load
+	.word	prim_psp_clear
+	.word	prim_psp_wait_button
 
 	.section	.data
 obarray:
@@ -1733,4 +1756,12 @@ obarray:
 	MAKE_SYM("newline")
 	#MAKE_SYM("image")
 	MAKE_SYM("load")
-	.skip	1008
+	MAKE_SYM("psp-clear")
+	MAKE_SYM("psp-wait-button")
+	NAME_SYM(x, "x")
+	NAME_SYM(o, "o")
+	NAME_SYM(up, "up")
+	NAME_SYM(down, "down")
+	NAME_SYM(left, "left")
+	NAME_SYM(right, "right")
+	.skip	992
