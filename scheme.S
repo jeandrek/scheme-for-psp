@@ -28,15 +28,7 @@
 ### (Strings are allocated using malloc and swept by GC, possibly
 ### not ideal)
 
-#define TAG_PAIR	0
-#define TAG_FIXNUM	1
-#define TAG_PROCEDURE	2
-#define TAG_SYMBOL	3
-#define TAG_STRING	4
-# #define TAG_CHARACTER	5
-# #define TAG_VECTOR	6
-# #define TAG_future	7
-
+#include "scheme.h"
 
 #define REG_FROMSPACE	$s5
 #define REG_TOSPACE	$s6
@@ -232,39 +224,6 @@ make_initial_environment:
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
-
-#define CHECK_PAIR(x)			\
-	beqz	x,1f;			\
-	andi	$t0,x,7;		\
-	beqz	$t0,2f;			\
-1:					\
-	move	$a1,x;			\
-	la	$a0,str_type_pair;	\
-	j	error;			\
-2:
-
-#define CHECK_FIXNUM(x) 		\
-	andi	$t0,x,7;		\
-	li	$t1,TAG_FIXNUM;		\
-	beq	$t0,$t1,1f;		\
-	move	$a1,x;			\
-	la	$a0,str_type_fixnum;	\
-	j	error;			\
-1:
-
-#define CHECK_STRING(x) 		\
-	andi	$t0,x,7;		\
-	li	$t1,TAG_STRING;		\
-	beq	$t0,$t1,1f;		\
-	move	$a1,x;			\
-	la	$a0,str_type_string;	\
-	j	error;			\
-1:
-
-#define DYADIC_ARGS		\
-	lw	$t0,4($a0);	\
-	lw	$a1,($t0);	\
-	lw	$a0,($a0)
 
 	.align	3
 prim_eq:
@@ -1678,6 +1637,9 @@ str_bad_exp:	.string	"Unknown expression type: "
 str_unbound:	.string	"Unbound variable: "
 str_not_proc:	.string	"Not a procedure: "
 str_out_of_mem:	.string	"Out of memory"
+	.globl	str_type_pair
+	.globl	str_type_fixnum
+	.globl	str_type_string
 str_type_pair:	.string	"Expected a pair: "
 str_type_fixnum:.string	"Expected a fixnum: "
 str_type_string:.string	"Expected a string: "

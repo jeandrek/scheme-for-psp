@@ -31,3 +31,16 @@ psp_wait_button(void)
 			return get_symbol("right");
 	}
 }
+
+void *
+psp_get_analog(void)
+{
+	SceCtrlData pad;
+
+	sceCtrlPeekBufferPositive(&pad, 1);
+
+	asm ("move $v0,%0\n\t"
+	     "move $v1,%1"
+	     :: "r" (pad.Lx << 3 | TAG_FIXNUM),
+	        "r" (pad.Ly << 3 | TAG_FIXNUM));
+}
