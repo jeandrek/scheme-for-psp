@@ -1,6 +1,6 @@
 #include "scheme.h"
 
-#define NUM_PRIMS_PLATFORM_DEPENDENT	4
+#define NUM_PRIMS_PLATFORM_DEPENDENT	6
 
 	.text
 	.align	3
@@ -23,6 +23,60 @@ prim_psp_clear:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	jal	pspDebugScreenClear
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	la	$a0,str_ok
+	j	intern
+
+	.align	3
+prim_psp_back_color:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	lw	$t0,4($a0)
+	lw	$a0,($a0)
+	lw	$a1,($t0)
+	lw	$t0,4($t0)
+	lw	$a2,($t0)
+	CHECK_FIXNUM($a0)
+	CHECK_FIXNUM($a1)
+	CHECK_FIXNUM($a2)
+	xori	$a1,$a1,TAG_FIXNUM
+	xori	$a2,$a2,TAG_FIXNUM
+	sra	$a0,$a0,3
+	sll	$a1,$a1,8 - 3
+	sll	$a2,$a2,16 - 3
+	or	$a0,$a0,$a1
+	or	$a0,$a0,$a2
+	li	$t0,0xff000000
+	or	$a0,$a0,$t0
+	jal	pspDebugScreenSetBackColor
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	la	$a0,str_ok
+	j	intern
+
+	.align	3
+prim_psp_text_color:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	lw	$t0,4($a0)
+	lw	$a0,($a0)
+	lw	$a1,($t0)
+	lw	$t0,4($t0)
+	lw	$a2,($t0)
+	CHECK_FIXNUM($a0)
+	CHECK_FIXNUM($a1)
+	CHECK_FIXNUM($a2)
+	xori	$a1,$a1,TAG_FIXNUM
+	xori	$a2,$a2,TAG_FIXNUM
+	sra	$a0,$a0,3
+	sll	$a1,$a1,8 - 3
+	sll	$a2,$a2,16 - 3
+	or	$a0,$a0,$a1
+	or	$a0,$a0,$a2
+	li	$t0,0xff000000
+	or	$a0,$a0,$t0
+	jal	pspDebugScreenSetTextColor
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	la	$a0,str_ok
@@ -91,6 +145,12 @@ prims_platform_dependent:
 	.word	str_psp_clear
 	.word	prim_psp_clear
 
+	.word	str_psp_back_color
+	.word	prim_psp_back_color
+
+	.word	str_psp_text_color
+	.word	prim_psp_text_color
+
 	.word	str_psp_wait_button
 	.word	prim_psp_wait_button
 
@@ -99,6 +159,8 @@ prims_platform_dependent:
 
 str_delay_ms:		.string	"delay-ms"
 str_psp_clear:		.string	"psp-clear"
+str_psp_back_color:	.string	"psp-back-color"
+str_psp_text_color:	.string	"psp-text-color"
 str_psp_wait_button:	.string	"psp-wait-button"
 str_psp_get_analog:	.string	"psp-get-analog"
 str_ok:			.string	"ok"
