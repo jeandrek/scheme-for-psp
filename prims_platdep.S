@@ -7,19 +7,17 @@ prim_psp_clear:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	jal	pspDebugScreenClear
-	la	$a0,sym_ok
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
-	jr	$ra
+	la	$a0,str_ok
+	j	intern
 
 	.align	3
 prim_psp_wait_button:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	jal	psp_wait_button
-	la	$a0,sym_x
-	sll	$v0,$v0,4
-	add	$a0,$a0,$v0
+	move	$a0,$v0
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -64,3 +62,4 @@ prims_platform_dependent:
 
 str_psp_clear:		.string	"psp-clear"
 str_psp_wait_button:	.string	"psp-wait-button"
+str_ok:			.string	"ok"

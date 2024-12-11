@@ -1,6 +1,6 @@
 TARGET = scheme
 
-OBJS = main.o scheme.o prims_platdep.o
+OBJS = main.o scheme.o prims_platdep.o platdep.o
 
 EXTRA_TARGETS = EBOOT.PBP
 

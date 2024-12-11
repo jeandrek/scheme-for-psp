@@ -167,24 +167,6 @@ screen_readline(void)
 
 
 int
-psp_wait_button(void)
-{
-	SceCtrlLatch latch;
-
-	for (;;) {
-		sceCtrlReadLatch(&latch);
-		if (latch.uiBreak & PSP_CTRL_CROSS)	return 0;
-		if (latch.uiBreak & PSP_CTRL_CIRCLE)	return 1;
-		if (latch.uiBreak & PSP_CTRL_UP)	return 2;
-		if (latch.uiBreak & PSP_CTRL_DOWN)	return 3;
-		if (latch.uiBreak & PSP_CTRL_LEFT)	return 4;
-		if (latch.uiBreak & PSP_CTRL_RIGHT)	return 5;
-	}
-}
-
-
-
-int
 exit_callback(int arg1, int arg2, void *argp)
 {
 }

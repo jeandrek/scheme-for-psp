@@ -84,6 +84,16 @@ readchar:
 	addi	$sp,$sp,16
 	jr	$ra
 
+	.globl	get_symbol
+get_symbol:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	jal	intern
+	move	$v0,$a0
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
+
 
 	.globl	scheme_main
 scheme_main:
@@ -1709,7 +1719,6 @@ obarray:
 	NAME_SYM(cond, "cond")
 	NAME_SYM(let, "let")
 	NAME_SYM(define, "define")
-	.globl	sym_ok
 	NAME_SYM(ok, "ok")
 	MAKE_SYM("eq?")
 	MAKE_SYM("integer?")
@@ -1735,11 +1744,4 @@ obarray:
 	MAKE_SYM("newline")
 	#MAKE_SYM("image")
 	MAKE_SYM("load")
-	.globl	sym_x
-	NAME_SYM(x, "x")
-	NAME_SYM(o, "o")
-	NAME_SYM(up, "up")
-	NAME_SYM(down, "down")
-	NAME_SYM(left, "left")
-	NAME_SYM(right, "right")
-	.skip	992
+	.skip	1008
