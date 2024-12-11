@@ -50,7 +50,7 @@
 #define TRUE		7
 #define FALSE		3
 
-#define NUM_PRIMITIVES	25
+#define NUM_PRIMITIVES	23
 
 # Every stack frame reachable by GC must have no dead values.
 #define ZEROFRAME		\
@@ -113,7 +113,8 @@ Lnot_imaged:
 	jal	writestr
 	jal	make_initial_environment
 	sw	$a0,8($sp)
-	move	$a1,$a0
+	jal	add_prims_platform_dependent
+	lw	$a1,8($sp)
 	la	$t0,global_env
 	sw	$a1,($t0)	# For LOAD
 	la	$a0,boot_scm_path
@@ -509,28 +510,6 @@ prim_load:
 	lw	$a1,($a1)
 	jal	load
 	la	$a0,SYM(ok)
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
-
-	.align	3
-prim_psp_clear:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	pspDebugScreenClear
-	la	$a0,SYM(ok)
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
-
-	.align	3
-prim_psp_wait_button:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	psp_wait_button
-	la	$a0,SYM(x)
-	sll	$v0,$v0,4
-	add	$a0,$a0,$v0
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -1609,8 +1588,7 @@ Lsweep_strings:
 	lw	$t1,8($sp)
 	j	Lsweep_strings
 1:
-	addi	$t2,$t1,4
-	sb	$zero,($t2)
+	sb	$zero,4($t1)
 	move	$t0,$t1
 	lw	$t1,($t0)
 	j	Lsweep_strings
@@ -1673,9 +1651,11 @@ error_pc:	.skip	4
 global_env:	.skip	4
 image_env:	.skip	4
 image_free:	.skip	4
+
 	.align	3
 pair_memory:	.skip	2*SPACE_SIZE
 all_strings:	.skip	4
+
 	.section	.rodata
 ext_alph_chars:	.string	"!$%&*+-./:<=>?@^_~"
 str_msg:	.string	"Scheme interpreter\n"
@@ -1717,8 +1697,6 @@ prim_addrs:
 	.word	prim_newline
 	#.word	prim_image
 	.word	prim_load
-	.word	prim_psp_clear
-	.word	prim_psp_wait_button
 
 	.section	.data
 obarray:
@@ -1731,6 +1709,7 @@ obarray:
 	NAME_SYM(cond, "cond")
 	NAME_SYM(let, "let")
 	NAME_SYM(define, "define")
+	.globl	sym_ok
 	NAME_SYM(ok, "ok")
 	MAKE_SYM("eq?")
 	MAKE_SYM("integer?")
@@ -1756,8 +1735,7 @@ obarray:
 	MAKE_SYM("newline")
 	#MAKE_SYM("image")
 	MAKE_SYM("load")
-	MAKE_SYM("psp-clear")
-	MAKE_SYM("psp-wait-button")
+	.globl	sym_x
 	NAME_SYM(x, "x")
 	NAME_SYM(o, "o")
 	NAME_SYM(up, "up")

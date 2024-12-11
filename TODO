@@ -9,6 +9,7 @@ To do
 - target most (all?) of R4/R5
 - control
 - use regs better
+  - start by making prims use $v0
 
 Possibly:
 
