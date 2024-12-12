@@ -1,6 +1,6 @@
 #include "scheme.h"
 
-#define NUM_PRIMS_PLATFORM_DEPENDENT	6
+#define NUM_PRIMS_PLATFORM_DEPENDENT	8
 
 	.text
 	.align	3
@@ -19,10 +19,35 @@ prim_delay_ms:
 	j	intern
 
 	.align	3
+prim_psp_vblank:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	jal	sceDisplayWaitVblankStart
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	la	$a0,str_ok
+	j	intern
+
+	.align	3
 prim_psp_clear:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	jal	pspDebugScreenClear
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	la	$a0,str_ok
+	j	intern
+
+	.align	3
+prim_psp_screen_x_y:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	DYADIC_ARGS
+	CHECK_FIXNUM($a0)
+	CHECK_FIXNUM($a1)
+	sra	$a0,$a0,3
+	sra	$a1,$a1,3
+	jal	pspDebugScreenSetXY
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	la	$a0,str_ok
@@ -142,8 +167,14 @@ prims_platform_dependent:
 	.word	str_delay_ms
 	.word	prim_delay_ms
 
+	.word	str_psp_vblank
+	.word	prim_psp_vblank
+
 	.word	str_psp_clear
 	.word	prim_psp_clear
+
+	.word	str_psp_screen_x_y
+	.word	prim_psp_screen_x_y
 
 	.word	str_psp_back_color
 	.word	prim_psp_back_color
@@ -158,7 +189,9 @@ prims_platform_dependent:
 	.word	prim_psp_get_analog
 
 str_delay_ms:		.string	"delay-ms"
+str_psp_vblank:		.string	"psp-vblank"
 str_psp_clear:		.string	"psp-clear"
+str_psp_screen_x_y:	.string	"psp-screen-x-y"
 str_psp_back_color:	.string	"psp-back-color"
 str_psp_text_color:	.string	"psp-text-color"
 str_psp_wait_button:	.string	"psp-wait-button"

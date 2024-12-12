@@ -1,5 +1,5 @@
-Scheme for MIPS/PSP
--------------------
+    Scheme for MIPS/PSP
+    -------------------
 
 (Name suggestions welcome)
 
@@ -12,7 +12,20 @@ from there not long till it started working.
 
 Depends on pspsdk
 
-Input is pretty bad (left/right triggers to select character; X to input;
-square to delete; triangle to enter)
-
 More to come
+
+
+
+    RUNNING ON YOUR PSP
+
+Place boot.scm in the root directory of your memory stick.
+
+By default, the read-eval-print-loop will run.  Input is not great
+(left/right triggers to select character; X to input; square to delete;
+triangle to enter)
+
+If you'd like to try a demo program (at present, there is only one, a
+game: demo/game.scm), place it on the memory stick e.g. in the root
+directory and add to the end of boot.scm:
+
+    (load "ms0:/game.scm")

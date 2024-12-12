@@ -1497,8 +1497,8 @@ Lout_of_mem:
 gc:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
-	la	$a0,str_gc
-	jal	writestr
+	#la	$a0,str_gc
+	#jal	writestr
 	move	$t0,REG_FROMSPACE
 	move	REG_FROMSPACE,REG_TOSPACE
 	move	REG_TOSPACE,$t0
@@ -1631,7 +1631,7 @@ str_msg:	.string	"Scheme interpreter\n"
 str_fresh:	.string	"(Not been imaged)\n"
 str_prim:	.string	"#[primitive]"
 str_proc:	.string "#[procedure "
-str_gc:		.string	"GC cycle\n"
+#str_gc:		.string	"GC cycle\n"
 str_bad_read:	.string	"Unexpected character"
 str_bad_exp:	.string	"Unknown expression type: "
 str_unbound:	.string	"Unbound variable: "
