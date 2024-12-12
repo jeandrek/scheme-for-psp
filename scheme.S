@@ -949,6 +949,8 @@ Lwhitespace:
 	beq	$a0,$t1,Lwhitespace
 	li	$t1,'\n'
 	beq	$a0,$t1,Lwhitespace
+	li	$t1,'\t'
+	beq	$a0,$t1,Lwhitespace
 	li	$t1,'0'
 	blt	$a0,$t1,1f
 	li	$t1,'9'
