@@ -951,6 +951,8 @@ Lwhitespace:
 	beq	$a0,$t1,Lwhitespace
 	li	$t1,'\t'
 	beq	$a0,$t1,Lwhitespace
+	li	$t1,'\f'
+	beq	$a0,$t1,Lwhitespace
 	li	$t1,'0'
 	blt	$a0,$t1,1f
 	li	$t1,'9'
@@ -1708,4 +1710,4 @@ obarray:
 	MAKE_SYM("newline")
 	#MAKE_SYM("image")
 	MAKE_SYM("load")
-	.skip	1008
+	.skip	3568

@@ -6,6 +6,7 @@ To do
 - better checking
 - better obarray/no symbol length limit
 - no reader string limit
+- variadic compound procedures
 - target most (all?) of R4/R5
 - control
 - use regs better

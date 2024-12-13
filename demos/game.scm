@@ -160,11 +160,6 @@
         ((null? (cdr lsts)) (car lsts))
         (else (append (car lsts) (flatten (cdr lsts))))))
 
-(define (append lst1 lst2)
-  (if (null? lst1)
-      lst2
-      (cons (car lst1) (append (cdr lst1) lst2))))
-
 ;; (define (clamp-analog analog)
 ;;   (cons (if (< (abs (- (car analog) 128)) 32) 128 (car analog))
 ;;         (if (< (abs (- (cdr analog) 128)) 32) 128 (cdr analog))))
