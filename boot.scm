@@ -14,9 +14,8 @@
 (define (zero? z) (= z 0))
 (define (positive? x) (> x 0))
 (define (negative? x) (< x 0))
-;;(define (odd? n) (= (modulo n 2) 1))
-(define (odd? n) (not (even? n)))
-(define (even? n) (= (remainder n 2) 1))
+(define (odd? n) (= (modulo n 2) 1))
+(define (even? n) (= (modulo n 2) 0))
 
 (define (max x y) (if (< x y) y x))
 (define (min x y) (if (< x y) x y))

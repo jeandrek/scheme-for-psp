@@ -42,7 +42,7 @@
 #define TRUE		7
 #define FALSE		3
 
-#define NUM_PRIMITIVES	23
+#define NUM_PRIMITIVES	24
 
 # Every stack frame reachable by GC must have no dead values.
 #define ZEROFRAME		\
@@ -314,6 +314,26 @@ prim_remainder:
 	sra	$a0,$a0,3
 	sra	$a1,$a1,3
 	rem	$a0,$a0,$a1
+	sll	$a0,$a0,3
+	ori	$a0,$a0,TAG_FIXNUM
+	jr	$ra
+
+	.align	3
+prim_modulo:
+	DYADIC_ARGS
+	CHECK_FIXNUM($a0)
+	CHECK_FIXNUM($a1)
+	sra	$a0,$a0,3
+	sra	$a1,$a1,3
+	## Could this be simpler?
+	rem	$a0,$a0,$a1
+	bge	$a0,$zero,1f
+	blt	$a1,$zero,2f
+	add	$a0,$a0,$a1
+1:
+	bge	$a1,$zero,2f
+	add	$a0,$a0,$a1
+2:
 	sll	$a0,$a0,3
 	ori	$a0,$a0,TAG_FIXNUM
 	jr	$ra
@@ -1658,6 +1678,7 @@ prim_addrs:
 	.word	prim_mul
 	.word	prim_quotient
 	.word	prim_remainder
+	.word	prim_modulo
 	.word	prim_pairp
 	.word	prim_cons
 	.word	prim_car
@@ -1695,6 +1716,7 @@ obarray:
 	MAKE_SYM("*")
 	MAKE_SYM("quotient")
 	MAKE_SYM("remainder")
+	MAKE_SYM("modulo")
 	MAKE_SYM("pair?")
 	MAKE_SYM("cons")
 	MAKE_SYM("car")
