@@ -2,6 +2,7 @@
 
 (define else #t)
 
+
 ;;; Numbers
 
 (define number? integer?)
@@ -10,13 +11,25 @@
 (define (<= x y) (not (< y x)))
 (define (>= x y) (not (< x y)))
 
+(define (zero? z) (= z 0))
+(define (positive? x) (> x 0))
+(define (negative? x) (< x 0))
+;;(define (odd? n) (= (modulo n 2) 1))
+(define (odd? n) (not (even? n)))
+(define (even? n) (= (remainder n 2) 1))
+
+(define (max x y) (if (< x y) y x))
+(define (min x y) (if (< x y) x y))
+
 (define (abs x) (if (< x 0) (- 0 x) x))
 
+
 ;;; Booleans
 
 (define (not obj) (if obj #f #t))
 (define (boolean? obj) (if obj (eq? obj #t) #t))
 
+
 ;;; Pairs and lists
 
 (define (null? obj) (eq? obj '()))
@@ -40,6 +53,13 @@
 	(loop (cdr lst) (cons (car lst) acc))))
   (loop lst '()))
 
+(define (list-tail lst k)
+  (if (= k 0)
+      lst
+      (list-tail (cdr lst) (- k 1))))
+
+(define (list-ref lst k) (car (list-tail lst k)))
+
 (define (memq obj lst)
   (cond ((null? lst) #f)
 	((eq? (car lst) obj) lst)
@@ -50,6 +70,7 @@
 	((eq? (car (car lst)) obj) (car lst))
 	(else (assq obj (cdr lst)))))
 
+
 ;;; Control features
 
 (define (map proc lst)

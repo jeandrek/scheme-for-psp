@@ -5,6 +5,10 @@ To do
 - more types
 - better checking
 - better obarray/no symbol length limit
+  - Note: reading will technically take about quad time because the # of
+    symbols grows and interning takes linear time.  A hash table is obviously
+    the best solution.  However this doesn't matter too much since only the
+    speed of reading is affected, not the speed of execution.
 - no reader string limit
 - variadic compound procedures
 - target most (all?) of R4/R5

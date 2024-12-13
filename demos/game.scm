@@ -54,9 +54,6 @@
           (list bomb))))
   bomb)
 
-(define (max x y) (if (< x y) y x))
-(define (min x y) (if (< x y) x y))
-
 (define (make-explosion x y)
   (define (explode1)
     (if (< (abs (- player-x x)) 4)
