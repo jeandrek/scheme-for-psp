@@ -42,7 +42,7 @@
 #define TRUE		7
 #define FALSE		3
 
-#define NUM_PRIMITIVES	24
+#define NUM_PRIMITIVES	28
 
 # Every stack frame reachable by GC must have no dead values.
 #define ZEROFRAME		\
@@ -405,6 +405,76 @@ prim_symbolp:
 	jr	$ra
 1:
 	li	$a0,FALSE
+	jr	$ra
+
+	.align	3
+prim_symbol2string:
+	lw	$a0,($a0)
+	andi	$t0,$a0,7
+	li	$t1,TAG_SYMBOL
+	bne	$t0,$t1,1f
+	li	$t0,TRUE
+	beq	$a0,$t0,1f
+	li	$t0,FALSE
+	beq	$a0,$t0,1f
+	j	2f
+1:
+	move	$a1,$a0
+	la	$a0,str_type_symbol
+	j	error
+2:
+	xori	$a1,$a0,TAG_SYMBOL
+	move	$t0,$a1
+	li	$a0,0
+3:
+	lb	$t1,($t0)
+	beqz	$t1,4f
+	addi	$t0,$t0,1
+	addi	$a0,$a0,1
+	j	3b
+4:
+	j	alloc_string
+
+## Note: R5RS does not explicitly list the EOF object as a disjoint type
+## set, therefore we can have STRING->SYMBOL as long as slashification
+## does not exist.
+
+	.align	3
+prim_string2symbol:
+	lw	$a0,($a0)
+	CHECK_STRING($a0)
+	xori	$a0,$a0,TAG_STRING
+	addi	$a0,$a0,5
+	j	intern
+
+	.align	3
+prim_stringp:
+	lw	$a0,($a0)
+	andi	$t0,$a0,7
+	li	$t1,TAG_STRING
+	bne	$t0,$t1,1f
+	li	$a0,TRUE
+	jr	$ra
+1:
+	li	$a0,FALSE
+	jr	$ra
+
+	.align	3
+prim_string_length:
+	lw	$a0,($a0)
+	CHECK_STRING($a0)
+	xori	$a0,$a0,TAG_STRING
+	addi	$a0,$a0,5
+	li	$t1,0
+1:
+	lb	$t0,($a0)
+	beqz	$t0,2f
+	addi	$a0,$a0,1
+	addi	$t1,$t1,1
+	j	1b
+2:
+	sll	$a0,$t1,3
+	ori	$a0,$a0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -1666,6 +1736,7 @@ str_out_of_mem:	.string	"Out of memory"
 	.globl	str_type_string
 str_type_pair:	.string	"Expected a pair: "
 str_type_fixnum:.string	"Expected a fixnum: "
+str_type_symbol:.string	"Expected a symbol: "
 str_type_string:.string	"Expected a string: "
 
 prim_addrs:
@@ -1687,6 +1758,10 @@ prim_addrs:
 	.word	prim_set_cdr
 	.word	prim_list
 	.word	prim_symbolp
+	.word	prim_symbol2string
+	.word	prim_string2symbol
+	.word	prim_stringp
+	.word	prim_string_length
 	.word	prim_procedurep
 	.word	prim_read
 	.word	prim_write
@@ -1725,6 +1800,10 @@ obarray:
 	MAKE_SYM("set-cdr!")
 	MAKE_SYM("list")
 	MAKE_SYM("symbol?")
+	MAKE_SYM("symbol->string")
+	MAKE_SYM("string->symbol")
+	MAKE_SYM("string?")
+	MAKE_SYM("string-length")
 	MAKE_SYM("procedure?")
 	MAKE_SYM("read")
 	MAKE_SYM("write")
@@ -1732,4 +1811,4 @@ obarray:
 	MAKE_SYM("newline")
 	#MAKE_SYM("image")
 	MAKE_SYM("load")
-	.skip	3568
+	.skip	3504
