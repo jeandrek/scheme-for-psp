@@ -28,6 +28,14 @@
 ### (Strings are allocated using malloc and swept by GC, possibly
 ### not ideal)
 
+### The following routines return a result in $v0 instead of $a0:
+### all primitives; apply; eval; lookup; make_procedure; set_variable
+### define_variable
+###
+### I.e., apply, eval, and those routines to which eval delegates
+### execution of certain expression types
+
+
 #include "scheme.h"
 
 #define REG_FROMSPACE	$s5
@@ -86,6 +94,16 @@ get_symbol:
 	addi	$sp,$sp,16
 	jr	$ra
 
+	.globl	C_cons
+C_cons:
+	addi	$sp,$sp,-16
+	sw	$ra,12($sp)
+	jal	cons
+	move	$v0,$a0
+	lw	$ra,12($sp)
+	addi	$sp,$sp,16
+	jr	$ra
+
 
 	.globl	scheme_main
 scheme_main:
@@ -132,7 +150,8 @@ Lprompt:
 	lw	$a1,8($sp)
 	jal	eval
 	la	$t0,SYM(ok)
-	beq	$a0,$t0,Lprompt
+	beq	$v0,$t0,Lprompt
+	move	$a0,$v0
 	jal	write
 	li	$a0,'\n'
 	jal	writechar
@@ -230,10 +249,10 @@ prim_eq:
 	DYADIC_ARGS
 Lcmp:
 	bne	$a0,$a1,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -242,10 +261,10 @@ prim_integerp:
 	andi	$a0,$a0,7
 	li	$t0,TAG_FIXNUM
 	bne	$a0,$t0,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -260,9 +279,9 @@ prim_lt:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
-	slt	$a0,$a0,$a1
-	sll	$a0,$a0,3
-	addi	$a0,$a0,FALSE
+	slt	$v0,$a0,$a1
+	sll	$v0,$v0,3
+	addi	$v0,$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -271,7 +290,7 @@ prim_add:
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
 	xori	$a1,$a1,TAG_FIXNUM
-	add	$a0,$a0,$a1
+	add	$v0,$a0,$a1
 	jr	$ra
 
 	.align	3
@@ -280,7 +299,7 @@ prim_sub:
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
 	xori	$a1,$a1,TAG_FIXNUM
-	sub	$a0,$a0,$a1
+	sub	$v0,$a0,$a1
 	jr	$ra
 
 	.align	3
@@ -290,8 +309,8 @@ prim_mul:
 	CHECK_FIXNUM($a1)
 	xori	$a0,$a0,TAG_FIXNUM
 	sra	$a1,$a1,3
-	mul	$a0,$a0,$a1
-	ori	$a0,$a0,TAG_FIXNUM
+	mul	$v0,$a0,$a1
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -301,9 +320,9 @@ prim_quotient:
 	CHECK_FIXNUM($a1)
 	sra	$a0,$a0,3
 	sra	$a1,$a1,3
-	div	$a0,$a0,$a1
-	sll	$a0,$a0,3
-	ori	$a0,$a0,TAG_FIXNUM
+	div	$v0,$a0,$a1
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -313,9 +332,9 @@ prim_remainder:
 	CHECK_FIXNUM($a1)
 	sra	$a0,$a0,3
 	sra	$a1,$a1,3
-	rem	$a0,$a0,$a1
-	sll	$a0,$a0,3
-	ori	$a0,$a0,TAG_FIXNUM
+	rem	$v0,$a0,$a1
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -326,16 +345,16 @@ prim_modulo:
 	sra	$a0,$a0,3
 	sra	$a1,$a1,3
 	## Could this be simpler?
-	rem	$a0,$a0,$a1
-	bge	$a0,$zero,1f
+	rem	$v0,$a0,$a1
+	bge	$v0,$zero,1f
 	blt	$a1,$zero,2f
-	add	$a0,$a0,$a1
+	add	$v0,$v0,$a1
 1:
 	bge	$a1,$zero,2f
-	add	$a0,$a0,$a1
+	add	$v0,$v0,$a1
 2:
-	sll	$a0,$a0,3
-	ori	$a0,$a0,TAG_FIXNUM
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -344,10 +363,10 @@ prim_pairp:
 	andi	$t0,$a0,7
 	bnez	$t0,1f
 	beqz	$a0,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -355,20 +374,21 @@ prim_cons:
 	lw	$t0,4($a0)
 	lw	$t0,($t0)
 	sw	$t0,4($a0)
+	move	$v0,$a0
 	jr	$ra
 
 	.align	3
 prim_car:
 	lw	$a0,($a0)
 	CHECK_PAIR($a0)
-	lw	$a0,($a0)
+	lw	$v0,($a0)
 	jr	$ra
 
 	.align	3
 prim_cdr:
 	lw	$a0,($a0)
 	CHECK_PAIR($a0)
-	lw	$a0,4($a0)
+	lw	$v0,4($a0)
 	jr	$ra
 
 	.align	3
@@ -376,7 +396,7 @@ prim_set_car:
 	DYADIC_ARGS
 	CHECK_PAIR($a0)
 	sw	$a1,($a0)
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	jr	$ra
 
 	.align	3
@@ -384,11 +404,12 @@ prim_set_cdr:
 	DYADIC_ARGS
 	CHECK_PAIR($a0)
 	sw	$a1,4($a0)
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	jr	$ra
 
 	.align	3
 prim_list:
+	move	$v0,$a0
 	jr	$ra
 
 	.align	3
@@ -401,10 +422,10 @@ prim_symbolp:
 	beq	$a0,$t0,1f
 	li	$t0,FALSE
 	beq	$a0,$t0,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -413,10 +434,10 @@ prim_procedurep:
 	andi	$t0,$a0,7
 	li	$t1,TAG_PROCEDURE
 	bne	$t0,$t1,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -430,7 +451,7 @@ prim_write:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	jal	write
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -446,7 +467,7 @@ prim_display:
 	jal	write
 	la	$t1,printer_display_flag
 	sw	$zero,($t1)
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -457,7 +478,7 @@ prim_newline:
 	sw	$ra,12($sp)
 	li	$a0,'\n'
 	jal	writechar
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -481,7 +502,7 @@ prim_image:
 	li	$a1,PAIR_MEM + SPACE_SIZE
 	## XXX
 	#jal	image
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -498,7 +519,7 @@ prim_load:
 	la	$a1,global_env
 	lw	$a1,($a1)
 	jal	load
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -530,6 +551,7 @@ eval:
 	j	error
 
 Leval_self_evaluating:
+	move	$v0,$a0
 	jr	$ra
 
 Leval_variable:
@@ -567,6 +589,7 @@ Leval_pair:
 	lw	$a1,($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
+	move	$a0,$v0
 	j	apply
 
 
@@ -574,7 +597,7 @@ Leval_pair:
 
 Leval_quote:
 	lw	$a0,4($a0)
-	lw	$a0,($a0)
+	lw	$v0,($a0)
 	jr	$ra
 
 Leval_lambda:
@@ -597,12 +620,12 @@ Leval_if:
 	lw	$a1,4($sp)
 	lw	$t0,8($sp)
 	li	$t1,FALSE
-	beq	$a0,$t1,Leval_alt
+	beq	$v0,$t1,Leval_alt
 	j	Leval_conseq
 Leval_alt:
 	lw	$t0,4($t0)
 	bnez	$t0,Leval_conseq
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -624,7 +647,7 @@ Leval_set:
 	lw	$a0,($a0)
 	move	$s2,$a1
 	jal	eval
-	move	$a1,$a0
+	move	$a1,$v0
 	move	$a0,$s1
 	move	$a2,$s2
 	lw	$s2,4($sp)
@@ -647,7 +670,7 @@ Leval_cond:
 	move	$s2,$a1
 1:
 	bnez	$s1,2f
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$s3,($sp)
 	lw	$s2,4($sp)
 	lw	$s1,8($sp)
@@ -661,7 +684,7 @@ Leval_cond:
 	move	$a1,$s2
 	jal	eval
 	li	$t0,FALSE
-	beq	$a0,$t0,3f
+	beq	$v0,$t0,3f
 	move	$a0,$s3
 	move	$a1,$s2
 	lw	$s3,($sp)
@@ -756,7 +779,7 @@ Leval_define:
 2:
 	lw	$a1,8($sp)
 	jal	eval
-	move	$a1,$a0
+	move	$a1,$v0
 	lw	$a0,4($sp)
 	lw	$a2,8($sp)
 	lw	$ra,12($sp)
@@ -775,6 +798,7 @@ eval_arguments:
 	sw	$a1,($sp)
 	lw	$a0,($t0)
 	jal	eval
+	move	$a0,$v0
 	lw	$a1,4($sp)
 	jal	cons
 	move	$t1,$a0
@@ -827,7 +851,7 @@ make_procedure:
 	move	$a1,$a0
 	move	$a0,$s1
 	jal	cons
-	ori	$a0,$a0,TAG_PROCEDURE
+	ori	$v0,$a0,TAG_PROCEDURE
 	lw	$s1,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
@@ -882,7 +906,7 @@ lookup:
 	lw	$t3,4($t3)
 	j	1b
 2:
-	lw	$a0,($t3)
+	lw	$v0,($t3)
 	jr	$ra
 3:
 	lw	$a1,4($a1)
@@ -903,7 +927,7 @@ set_variable:
 	j	1b
 2:
 	sw	$a1,($t3)
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	jr	$ra
 3:
 	lw	$a2,4($a2)
@@ -948,7 +972,7 @@ define_variable:
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 4:
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	jr	$ra
 
 
@@ -1661,9 +1685,6 @@ str_bad_exp:	.string	"Unknown expression type: "
 str_unbound:	.string	"Unbound variable: "
 str_not_proc:	.string	"Not a procedure: "
 str_out_of_mem:	.string	"Out of memory"
-	.globl	str_type_pair
-	.globl	str_type_fixnum
-	.globl	str_type_string
 str_type_pair:	.string	"Expected a pair: "
 str_type_fixnum:.string	"Expected a fixnum: "
 str_type_string:.string	"Expected a string: "
@@ -1687,6 +1708,10 @@ prim_addrs:
 	.word	prim_set_cdr
 	.word	prim_list
 	.word	prim_symbolp
+	#.word	prim_symbol2string
+	#.word	prim_string2symbol
+	#.word	prim_stringp
+	#.word	prim_string_length
 	.word	prim_procedurep
 	.word	prim_read
 	.word	prim_write
@@ -1725,6 +1750,10 @@ obarray:
 	MAKE_SYM("set-cdr!")
 	MAKE_SYM("list")
 	MAKE_SYM("symbol?")
+	#MAKE_SYM("symbol->string")
+	#MAKE_SYM("string->symbol")
+	#MAKE_SYM("string?")
+	#MAKE_SYM("string-length")
 	MAKE_SYM("procedure?")
 	MAKE_SYM("read")
 	MAKE_SYM("write")
