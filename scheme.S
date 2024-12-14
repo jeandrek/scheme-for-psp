@@ -1685,9 +1685,6 @@ str_bad_exp:	.string	"Unknown expression type: "
 str_unbound:	.string	"Unbound variable: "
 str_not_proc:	.string	"Not a procedure: "
 str_out_of_mem:	.string	"Out of memory"
-	.globl	str_type_pair
-	.globl	str_type_fixnum
-	.globl	str_type_string
 str_type_pair:	.string	"Expected a pair: "
 str_type_fixnum:.string	"Expected a fixnum: "
 str_type_string:.string	"Expected a string: "

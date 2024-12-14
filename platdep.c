@@ -40,6 +40,7 @@ PRIMITIVE void *
 prim_delay_ms(void *args)
 {
 	uint32_t arg = ((uint32_t *)args)[0];
+	CHECK_FIXNUM(arg);
 	arg >>= 3;
 	sceKernelDelayThread(1000 * arg);
 	return symbol_ok;
@@ -68,6 +69,8 @@ prim_psp_screen_x_y(void *args)
 	args = ((void **)args)[1];
 	arg2 = ((uint32_t *)args)[0];
 
+	CHECK_FIXNUM(arg1);
+	CHECK_FIXNUM(arg2);
 	arg1 >>= 3;
 	arg2 >>= 3;
 	pspDebugScreenSetXY(arg1, arg2);
@@ -85,6 +88,9 @@ prim_psp_back_color(void *args)
 	args = ((void **)args)[1];
 	arg3 = ((uint32_t *)args)[0];
 
+	CHECK_FIXNUM(arg1);
+	CHECK_FIXNUM(arg2);
+	CHECK_FIXNUM(arg3);
 	arg1 >>= 3;
 	arg2 ^= TAG_FIXNUM;
 	arg3 ^= TAG_FIXNUM;
@@ -106,6 +112,9 @@ prim_psp_text_color(void *args)
 	args = ((void **)args)[1];
 	arg3 = ((uint32_t *)args)[0];
 
+	CHECK_FIXNUM(arg1);
+	CHECK_FIXNUM(arg2);
+	CHECK_FIXNUM(arg3);
 	arg1 >>= 3;
 	arg2 ^= TAG_FIXNUM;
 	arg3 ^= TAG_FIXNUM;

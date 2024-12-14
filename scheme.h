@@ -66,6 +66,12 @@ struct prim_decl {
 	void	*(*addr)(void *);
 };
 
+#define CHECK_FIXNUM(x)							\
+	do {								\
+		if (((uint32_t)(x) & 7) != TAG_FIXNUM)			\
+			error("Expected a fixnum: ", (void *)(x));	\
+	} while (0)
+
 #endif
 
 #endif /* !_SCHEME_H_ */
