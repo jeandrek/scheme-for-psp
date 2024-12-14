@@ -56,6 +56,15 @@
 void	scheme_main(void);
 void	error(char *, void *);
 void	*get_symbol(char *);
+void	*C_cons(void *, void *);
+void	define_variable(void *, void *, void *);
+
+#define PRIMITIVE	__attribute__ ((aligned (8)))
+
+struct prim_decl {
+	char	*name;
+	void	*(*addr)(void *);
+};
 
 #endif
 
