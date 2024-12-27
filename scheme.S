@@ -76,26 +76,6 @@ readchar:
 	addi	$sp,$sp,16
 	jr	$ra
 
-## 	.globl	get_symbol
-## get_symbol:
-## 	addi	$sp,$sp,-16
-## 	sw	$ra,12($sp)
-## 	jal	intern
-## 	move	$v0,$a0
-## 	lw	$ra,12($sp)
-## 	addi	$sp,$sp,16
-## 	jr	$ra
-
-	.globl	C_cons
-C_cons:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	cons
-	move	$v0,$a0
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
-
 
 	.globl	scheme_main
 scheme_main:
@@ -124,7 +104,8 @@ Lnot_imaged:
 	la	$a0,str_fresh
 	jal	writestr
 	jal	make_initial_environment
-	sw	$a0,8($sp)
+	sw	$v0,8($sp)
+	move	$a0,$v0
 	jal	add_prims_platform_dependent
 	lw	$a1,8($sp)
 	la	$t0,global_env
@@ -208,7 +189,7 @@ make_initial_environment:
 	beqz	$s2,2f
 	move	$a0,$s1
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	addi	$s1,$s1,SYMBOL_LENGTH
 	addi	$s2,$s2,-1
 	j	1b
@@ -222,13 +203,14 @@ make_initial_environment:
 	lw	$a0,($s1)
 	ori	$a0,$a0,TAG_PROCEDURE
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	addi	$s1,$s1,4
 	addi	$s2,$s2,-1
 	j	1b
 2:
 	move	$a0,$s3
 	jal	cons
+	move	$a0,$v0
 	li	$a1,0
 	jal	cons
 	lw	$s3,($sp)
@@ -762,9 +744,10 @@ Leval_define:
 	lw	$a1,4($t0)
 	sw	$t2,4($sp)
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	la	$a0,SYM(lambda)
 	jal	cons
+	move	$a0,$v0		# check this
 	j	2f
 1:
 	lw	$t0,4($t0)
@@ -795,7 +778,7 @@ eval_arguments:
 	move	$a0,$v0
 	lw	$a1,4($sp)
 	jal	cons
-	move	$t1,$a0
+	move	$t1,$v0
 	lw	$t0,8($sp)
 	lw	$t0,4($t0)
 	lw	$a1,($sp)
@@ -842,10 +825,10 @@ make_procedure:
 	sw	$s1,8($sp)
 	move	$s1,$a2
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	move	$a0,$s1
 	jal	cons
-	ori	$v0,$a0,TAG_PROCEDURE
+	ori	$v0,$v0,TAG_PROCEDURE
 	lw	$s1,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
@@ -868,10 +851,11 @@ apply:
 	lw	$t0,4($t0)
 	lw	$a0,($t0)
 	jal	cons
+	move	$a0,$v0
 	lw	$t0,8($sp)
 	lw	$a1,($t0)
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	lw	$t0,8($sp)
 	lw	$t0,4($t0)
 	lw	$a0,4($t0)
@@ -957,12 +941,12 @@ define_variable:
 	sw	$t0,4($sp)
 	jal	cons
 	lw	$t0,4($sp)
-	sw	$a0,($t0)
+	sw	$v0,($t0)
 	lw	$a0,8($sp)
 	lw	$a1,4($t0)
 	jal	cons
 	lw	$t0,4($sp)
-	sw	$a0,4($t0)
+	sw	$v0,4($t0)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 4:
@@ -1153,7 +1137,7 @@ Lread_list:
 	move	$a0,$v0
 	lw	$a1,4($sp)
 	jal	cons
-	move	$t0,$a0
+	move	$t0,$v0
 	j	1b
 2:
 	move	$a0,$s0
@@ -1170,14 +1154,12 @@ Lread_quote:
 	move	$a0,$v0
 	li	$a1,0
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	la	$a0,SYM(quote)
 	lw	$s0,8($sp)
-	jal	cons
-	move	$v0,$a0
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
-	jr	$ra
+	j	cons
 
 Lread_string:
 	addi	$sp,$sp,-32
@@ -1512,7 +1494,7 @@ cons:
 	addi	REG_FREE,REG_FREE,8
 	sw	$a0,($t0)
 	sw	$a1,4($t0)
-	move	$a0,$t0
+	move	$v0,$t0
 	jr	$ra
 2:
 	addi	$sp,$sp,-16

@@ -154,8 +154,8 @@ prim_psp_get_analog(void *args)
 	SceCtrlData pad;
 
 	sceCtrlPeekBufferPositive(&pad, 1);
-	return C_cons((void *)(pad.Lx << 3 | TAG_FIXNUM),
-		      (void *)(pad.Ly << 3 | TAG_FIXNUM));
+	return cons((void *)(pad.Lx << 3 | TAG_FIXNUM),
+		    (void *)(pad.Ly << 3 | TAG_FIXNUM));
 }
 
 struct prim_decl prims_platform_dependent[] = {

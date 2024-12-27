@@ -56,7 +56,7 @@
 void	scheme_main(void);
 void	error(char *, void *);
 void	*intern(char *);
-void	*C_cons(void *, void *);
+void	*cons(void *, void *);
 void	define_variable(void *, void *, void *);
 
 #define PRIMITIVE	__attribute__ ((aligned (8)))
