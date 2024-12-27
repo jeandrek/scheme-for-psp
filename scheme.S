@@ -28,14 +28,6 @@
 ### (Strings are allocated using malloc and swept by GC, possibly
 ### not ideal)
 
-### The following routines return a result in $v0 instead of $a0:
-### all primitives; apply; eval; lookup; make_procedure; set_variable
-### define_variable
-###
-### I.e., apply, eval, and those routines to which eval delegates
-### execution of certain expression types
-
-
 #include "scheme.h"
 
 #define REG_FROMSPACE	$s5
@@ -147,6 +139,7 @@ Lprompt:
 	jal	writechar
 	li	$a0,0
 	jal	read
+	move	$a0,$v0
 	lw	$a1,8($sp)
 	jal	eval
 	la	$t0,SYM(ok)
@@ -185,7 +178,8 @@ load:
 1:
 	jal	read
 	la	$t0,SYM(Eof)
-	beq	$a0,$t0,2f
+	beq	$v0,$t0,2f
+	move	$a0,$v0
 	lw	$a1,4($sp)
 	jal	eval
 	lw	$a0,8($sp)
@@ -582,7 +576,7 @@ Leval_pair:
 	sw	$a1,8($sp)
 	sw	$t0,4($sp)
 	jal	eval_arguments
-	sw	$a0,($sp)
+	sw	$v0,($sp)
 	lw	$a0,4($sp)
 	lw	$a1,8($sp)
 	jal	eval
@@ -1039,10 +1033,10 @@ Lwhitespace:
 	li	$t2,1
 	j	Lread_num
 3:
-	sw	$a0,4($sp)
+	#sw	$a0,4($sp)
 	jal	is_nondigit_symbol_char
-	bnez	$a0,Lread_symbol
-	lw	$a0,4($sp)
+	bnez	$v0,Lread_symbol
+	#lw	$a0,4($sp)
 7:
 	li	$t1,'('
 	beq	$a0,$t1,Lread_list
@@ -1056,7 +1050,7 @@ Lwhitespace:
 	beq	$a0,$t1,Lread_comment
 	li	$t1,-1
 	bne	$a0,$t1,Lunexpected_char
-	la	$a0,SYM(Eof)
+	la	$v0,SYM(Eof)
 	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
@@ -1087,21 +1081,20 @@ Lread_num:
 	sw	$t0,4($sp)
 	j	1b
 2:
-	lw	$t0,4($sp)
+	lw	$v0,4($sp)
 	lw	$t2,($sp)
-	move	$a0,$t0
 	beqz	$t2,3f
-	neg	$a0,$a0
+	neg	$v0,$v0
 3:
-	sll	$a0,$a0,3
-	ori	$a0,$a0,TAG_FIXNUM
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
 
 Lread_symbol:
-	lw	$a0,4($sp)
+	#lw	$a0,4($sp)
 	li	$t1,'A'
 	blt	$a0,$t1,1f
 	li	$t1,'Z'
@@ -1116,7 +1109,7 @@ Lread_symbol:
 	move	$a0,$s0
 	jal	peekchar
 	jal	is_nondigit_symbol_char
-	bnez	$a0,Lconsume
+	bnez	$v0,Lconsume
 	move	$a0,$s0
 	jal	peekchar	# XXX
 	li	$t1,'0'
@@ -1141,7 +1134,7 @@ Lconsume:
 	sb	$zero,($t0)
 	move	$a0,$sp
 	jal	intern
-	move	$a0,$v0		# XXX
+	#move	$a0,$v0		# XXX
 	lw	$s0,24($sp)
 	lw	$ra,28($sp)
 	addi	$sp,$sp,32
@@ -1157,6 +1150,7 @@ Lread_list:
 	beq	$a0,$t1,2f
 	move	$a0,$s0
 	jal	read
+	move	$a0,$v0
 	lw	$a1,4($sp)
 	jal	cons
 	move	$t0,$a0
@@ -1173,14 +1167,17 @@ Lread_list:
 Lread_quote:
 	move	$a0,$s0
 	jal	read
+	move	$a0,$v0
 	li	$a1,0
 	jal	cons
 	move	$a1,$a0
 	la	$a0,SYM(quote)
 	lw	$s0,8($sp)
+	jal	cons
+	move	$v0,$a0
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
-	j	cons
+	jr	$ra
 
 Lread_string:
 	addi	$sp,$sp,-32
@@ -1210,12 +1207,12 @@ Lread_hash:
 	jal	readchar
 	li	$t0,'t'
 	bne	$a0,$t0,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	j	2f
 1:
 	li	$t0,'f'
 	bne	$a0,$t0,Lunexpected_char
-	li	$a0,FALSE
+	li	$v0,FALSE
 2:
 	lw	$s0,8($sp)
 	lw	$ra,12($sp)
@@ -1253,10 +1250,10 @@ is_nondigit_symbol_char:
 	addi	$t0,$t0,1
 	j	3b
 4:
-	li	$a0,1
+	li	$v0,1
 	jr	$ra
 5:
-	li	$a0,0
+	li	$v0,0
 	jr	$ra
 
 	.globl	intern
@@ -1479,7 +1476,7 @@ alloc_string:
 	lw	$a1,8($sp)
 	addi	$a0,$v0,5
 	jal	str_cpy
-	ori	$a0,$v0,TAG_STRING
+	ori	$v0,$v0,TAG_STRING
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -1498,7 +1495,7 @@ nreverse:
 	move	$a0,$t1
 	j	1b
 2:
-	move	$a0,$t0
+	move	$v0,$t0		# XXX
 	jr	$ra
 
 
