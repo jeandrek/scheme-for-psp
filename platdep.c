@@ -20,17 +20,17 @@ static void	*symbol_right;
 void
 init_platdep(void)
 {
-	symbol_ok	= get_symbol("ok");
-	symbol_cross	= get_symbol("cross");
-	symbol_circle	= get_symbol("circle");
-	symbol_triangle	= get_symbol("triangle");
-	symbol_square	= get_symbol("square");
-	symbol_left_trigger	= get_symbol("left-trigger");
-	symbol_right_trigger	= get_symbol("right-trigger");
-	symbol_up	= get_symbol("up");
-	symbol_down	= get_symbol("down");
-	symbol_left	= get_symbol("left");
-	symbol_right	= get_symbol("right");
+	symbol_ok	= intern("ok");
+	symbol_cross	= intern("cross");
+	symbol_circle	= intern("circle");
+	symbol_triangle	= intern("triangle");
+	symbol_square	= intern("square");
+	symbol_left_trigger	= intern("left-trigger");
+	symbol_right_trigger	= intern("right-trigger");
+	symbol_up	= intern("up");
+	symbol_down	= intern("down");
+	symbol_left	= intern("left");
+	symbol_right	= intern("right");
 
 	sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 	sceCtrlSetSamplingCycle(0);
@@ -180,7 +180,7 @@ add_prims_platform_dependent(void *env)
 	init_platdep();
 	while (prim_decls[i].name != NULL) {
 		prim = (void *)((uint32_t)prim_decls[i].addr | TAG_PROCEDURE);
-		define_variable(get_symbol(prim_decls[i].name), prim, env);
+		define_variable(intern(prim_decls[i].name), prim, env);
 		i++;
 	}
 }

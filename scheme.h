@@ -55,7 +55,7 @@
 /* scheme.S */
 void	scheme_main(void);
 void	error(char *, void *);
-void	*get_symbol(char *);
+void	*intern(char *);
 void	*C_cons(void *, void *);
 void	define_variable(void *, void *, void *);
 

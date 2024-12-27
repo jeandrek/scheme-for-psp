@@ -84,15 +84,15 @@ readchar:
 	addi	$sp,$sp,16
 	jr	$ra
 
-	.globl	get_symbol
-get_symbol:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	intern
-	move	$v0,$a0
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
+## 	.globl	get_symbol
+## get_symbol:
+## 	addi	$sp,$sp,-16
+## 	sw	$ra,12($sp)
+## 	jal	intern
+## 	move	$v0,$a0
+## 	lw	$ra,12($sp)
+## 	addi	$sp,$sp,16
+## 	jr	$ra
 
 	.globl	C_cons
 C_cons:
@@ -1141,6 +1141,7 @@ Lconsume:
 	sb	$zero,($t0)
 	move	$a0,$sp
 	jal	intern
+	move	$a0,$v0		# XXX
 	lw	$s0,24($sp)
 	lw	$ra,28($sp)
 	addi	$sp,$sp,32
@@ -1271,22 +1272,22 @@ intern:
 	sw	$a0,8($sp)
 	sw	$a1,4($sp)
 	jal	str_eql
-	bnez	$a0,2f
+	bnez	$v0,2f
 	lw	$a0,8($sp)
 	lw	$a1,4($sp)
 	addi	$a0,$a0,SYMBOL_LENGTH
 	j	1b
 2:
-	lw	$a0,8($sp)
-	ori	$a0,$a0,TAG_SYMBOL
+	lw	$v0,8($sp)
+	ori	$v0,$v0,TAG_SYMBOL
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
 3:
 	sw	$a0,8($sp)
 	jal	str_cpy
-	lw	$a0,8($sp)
-	ori	$a0,$a0,TAG_SYMBOL
+	lw	$v0,8($sp)
+	ori	$v0,$v0,TAG_SYMBOL
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -1300,10 +1301,10 @@ str_eql:
 	addi	$a1,$a1,1
 	j	str_eql
 1:
-	li	$a0,1
+	li	$v0,1
 	jr	$ra
 2:
-	li	$a0,0
+	li	$v0,0
 	jr	$ra
 
 str_cpy:
