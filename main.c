@@ -77,7 +77,7 @@ char input[100];
 size_t idx = 0;
 
 int
-C_peekchar(FILE *input_file)
+peekchar(FILE *input_file)
 {
 	if (input_file) {
 		int c = getc(input_file);
@@ -94,14 +94,14 @@ C_peekchar(FILE *input_file)
 }
 
 int
-C_readchar(FILE *input_file)
+readchar(FILE *input_file)
 {
 	if (input_file) {
 		int c = getc(input_file);
 		return c;
 	}
 
-	int c = C_peekchar(NULL);
+	int c = peekchar(NULL);
 	idx++;
 	return c;
 }
