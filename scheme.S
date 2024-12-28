@@ -55,28 +55,6 @@
 #define MAKE_SYM(name)		.align 4; .string name
 
 
-### Glue
-	.text
-	.globl	peekchar
-peekchar:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	C_peekchar
-	move	$a0,$v0
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
-	.globl	readchar
-readchar:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	C_readchar
-	move	$a0,$v0
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
-
-
 	.globl	scheme_main
 scheme_main:
 	la	$t0,gc_top_of_stack
@@ -968,28 +946,26 @@ Lwhitespace:
 	move	$a0,$s0
 	jal	readchar
 	li	$t1,' '
-	beq	$a0,$t1,Lwhitespace
+	beq	$v0,$t1,Lwhitespace
 	li	$t1,'\n'
-	beq	$a0,$t1,Lwhitespace
+	beq	$v0,$t1,Lwhitespace
 	li	$t1,'\t'
-	beq	$a0,$t1,Lwhitespace
+	beq	$v0,$t1,Lwhitespace
 	li	$t1,'\f'
-	beq	$a0,$t1,Lwhitespace
+	beq	$v0,$t1,Lwhitespace
 	li	$t1,'0'
-	blt	$a0,$t1,1f
+	blt	$v0,$t1,1f
 	li	$t1,'9'
 	li	$t2,0
-	ble	$a0,$t1,Lread_num
+	ble	$v0,$t1,Lread_num
 1:
 	li	$t1,'+'
-	bne	$a0,$t1,2f
-	move	$t0,$a0
-	sw	$t0,4($sp)
+	bne	$v0,$t1,2f
+	sw	$v0,4($sp)
 	move	$a0,$s0
 	jal	peekchar
-	lw	$t0,4($sp)
-	move	$t1,$a0
-	move	$a0,$t0
+	move	$t1,$v0
+	lw	$v0,4($sp)
 	li	$t2,'0'
 	blt	$t1,$t2,2f
 	li	$t2,'9'
@@ -1000,14 +976,12 @@ Lwhitespace:
 	j	Lread_num
 2:
 	li	$t1,'-'
-	bne	$a0,$t1,3f
-	move	$t0,$a0
-	sw	$t0,4($sp)
+	bne	$v0,$t1,3f
+	sw	$v0,4($sp)
 	move	$a0,$s0
 	jal	peekchar
-	lw	$t0,4($sp)
-	move	$t1,$a0
-	move	$a0,$t0
+	move	$t1,$v0
+	lw	$v0,4($sp)
 	li	$t2,'0'
 	blt	$t1,$t2,3f
 	li	$t2,'9'
@@ -1017,10 +991,11 @@ Lwhitespace:
 	li	$t2,1
 	j	Lread_num
 3:
-	#sw	$a0,4($sp)
+	move	$a0,$v0
 	jal	is_nondigit_symbol_char
-	bnez	$v0,Lread_symbol
-	#lw	$a0,4($sp)
+	move	$t0,$v0
+	move	$v0,$a0		# XXX
+	bnez	$t0,Lread_symbol
 7:
 	li	$t1,'('
 	beq	$a0,$t1,Lread_list
@@ -1045,23 +1020,23 @@ Lunexpected_char:
 	j	error
 
 Lread_num:
-	addi	$t0,$a0,-'0'
+	addi	$t0,$v0,-'0'
 	sw	$t0,4($sp)
 	sw	$t2,($sp)
 1:
 	move	$a0,$s0
 	jal	peekchar
 	li	$t1,'0'
-	blt	$a0,$t1,2f
+	blt	$v0,$t1,2f
 	li	$t1,'9'
-	bgt	$a0,$t1,2f
+	bgt	$v0,$t1,2f
 	move	$a0,$s0
 	jal	readchar
 	lw	$t0,4($sp)
-	addi	$a0,$a0,-'0'
+	addi	$v0,$v0,-'0'
 	li	$t1,10
 	mul	$t0,$t0,$t1
-	add	$t0,$t0,$a0
+	add	$t0,$t0,$v0
 	sw	$t0,4($sp)
 	j	1b
 2:
@@ -1078,39 +1053,39 @@ Lread_num:
 	jr	$ra
 
 Lread_symbol:
-	#lw	$a0,4($sp)
 	li	$t1,'A'
-	blt	$a0,$t1,1f
+	blt	$v0,$t1,1f
 	li	$t1,'Z'
-	bgt	$a0,$t1,1f
-	addi	$a0,$a0,32
+	bgt	$v0,$t1,1f
+	addi	$v0,$v0,32
 1:
 	addi	$sp,$sp,-16
-	sb	$a0,($sp)
+	sb	$v0,($sp)
 	addi	$t0,$sp,1
 2:
 	sw	$t0,20($sp)
 	move	$a0,$s0
 	jal	peekchar
+	move	$a0,$v0
 	jal	is_nondigit_symbol_char
 	bnez	$v0,Lconsume
 	move	$a0,$s0
 	jal	peekchar	# XXX
 	li	$t1,'0'
-	blt	$a0,$t1,4f
+	blt	$v0,$t1,4f
 	li	$t1,'9'
-	bgt	$a0,$t1,4f
+	bgt	$v0,$t1,4f
 Lconsume:
 	move	$a0,$s0
 	jal	readchar
 	li	$t1,'A'
-	blt	$a0,$t1,3f
+	blt	$v0,$t1,3f
 	li	$t1,'Z'
-	bgt	$a0,$t1,3f
-	addi	$a0,$a0,32
+	bgt	$v0,$t1,3f
+	addi	$v0,$v0,32
 3:
 	lw	$t0,20($sp)
-	sb	$a0,($t0)
+	sb	$v0,($t0)
 	addi	$t0,$t0,1
 	j	2b
 4:
@@ -1131,7 +1106,7 @@ Lread_list:
 	move	$a0,$s0
 	jal	peekchar
 	li	$t1,')'
-	beq	$a0,$t1,2f
+	beq	$v0,$t1,2f
 	move	$a0,$s0
 	jal	read
 	move	$a0,$v0
@@ -1169,8 +1144,8 @@ Lread_string:
 	jal	readchar
 	li	$t0,'\"'
 	lw	$t1,36($sp)
-	beq	$a0,$t0,2f
-	sb	$a0,($t1)
+	beq	$v0,$t0,2f
+	sb	$v0,($t1)
 	addi	$t1,$t1,1
 	sw	$t1,36($sp)
 	j	1b
@@ -1188,12 +1163,12 @@ Lread_hash:
 	move	$a0,$s0
 	jal	readchar
 	li	$t0,'t'
-	bne	$a0,$t0,1f
+	bne	$v0,$t0,1f
 	li	$v0,TRUE
 	j	2f
 1:
 	li	$t0,'f'
-	bne	$a0,$t0,Lunexpected_char
+	bne	$v0,$t0,Lunexpected_char
 	li	$v0,FALSE
 2:
 	lw	$s0,8($sp)
@@ -1205,9 +1180,9 @@ Lread_comment:
 	move	$a0,$s0
 	jal	readchar
 	li	$t0,'\n'
-	beq	$a0,$t0,1f
+	beq	$v0,$t0,1f
 	li	$t0,-1
-	beq	$a0,$t0,1f
+	beq	$v0,$t0,1f
 	j	Lread_comment
 1:
 	j	Lwhitespace
