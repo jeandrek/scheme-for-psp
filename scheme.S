@@ -1495,7 +1495,7 @@ Lout_of_mem:
 #define GC_ROOT(x)		\
 	move	$a0,x;		\
 	jal	relocate;	\
-	move	x,$a0
+	move	x,$v0
 
 gc:
 	addi	$sp,$sp,-16
@@ -1522,7 +1522,7 @@ Ltraverse_stack:
 	blt	$a0,REG_FROMSPACE,1f
 	bgt	$a0,$t3,1f
 	jal	relocate
-	sw	$a0,($t1)
+	sw	$v0,($t1)
 1:
 	addi	$t1,$t1,4
 	j	Ltraverse_stack
@@ -1532,10 +1532,10 @@ Lgc_loop:
 	lw	$t2,4($t0)
 	move	$a0,$t1
 	jal	relocate
-	sw	$a0,($t0)
+	sw	$v0,($t0)
 	move	$a0,$t2
 	jal	relocate
-	sw	$a0,4($t0)
+	sw	$v0,4($t0)
 	addi	$t0,$t0,8
 	j	Lgc_loop
 1:
@@ -1578,20 +1578,20 @@ relocate:
 	li	$t6,TAG_STRING
 	beq	$t5,$t6,Lmark_string
 1:
+	move	$v0,$a0
 	jr	$ra
 Lrelocate_procedure:
 	la	$t5,PAIR_MEM
-	blt	$a0,$t5,1f
+	blt	$a0,$t5,1b
 	la	$t5,PAIR_MEM + 2*SPACE_SIZE
-	bgt	$a0,$t5,1f
+	bgt	$a0,$t5,1b
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	xori	$a0,$a0,TAG_PROCEDURE
 	jal	relocate
-	ori	$a0,$a0,TAG_PROCEDURE
+	ori	$v0,$v0,TAG_PROCEDURE
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
-1:
 	jr	$ra
 Lrelocate_pair:
 	lw	$t5,($a0)
@@ -1600,20 +1600,19 @@ Lrelocate_pair:
 	beq	$t5,$a1,Lfound_broken_heart
 	sw	$t5,(REG_FREE)
 	sw	$t6,4(REG_FREE)
-	move	$t5,REG_FREE
+	move	$v0,REG_FREE
 	addi	REG_FREE,REG_FREE,8
 	sw	$a1,($a0)
-	sw	$t5,4($a0)
-	move	$a0,$t5
+	sw	$v0,4($a0)
 	jr	$ra
 Lfound_broken_heart:
-	move	$a0,$t6
+	move	$v0,$t6
 	jr	$ra
 Lmark_string:
+	move	$v0,$a0
 	xori	$a0,$a0,TAG_STRING
 	li	$t5,1
 	sb	$t5,4($a0)
-	ori	$a0,$a0,TAG_STRING
 	jr	$ra
 
 	.bss
