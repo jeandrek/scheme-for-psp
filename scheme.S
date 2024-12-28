@@ -1721,7 +1721,11 @@ all_strings:	.skip	4
 
 	.section	.rodata
 ext_alph_chars:	.string	"!$%&*+-./:<=>?@^_~"
-str_msg:	.string	"Scheme interpreter\n"
+str_msg:
+	.ascii	"Scheme interpreter\n"
+	.ascii	"Version "
+	.ascii	SCHEME_VERSION
+	.string	"\n"
 str_fresh:	.string	"(Not been imaged)\n"
 str_prim:	.string	"#[primitive]"
 str_proc:	.string "#[procedure "
