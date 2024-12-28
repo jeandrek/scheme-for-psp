@@ -428,10 +428,10 @@ prim_stringp:
 	andi	$t0,$a0,7
 	li	$t1,TAG_STRING
 	bne	$t0,$t1,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -440,16 +440,16 @@ prim_string_length:
 	CHECK_STRING($a0)
 	xori	$a0,$a0,TAG_STRING
 	addi	$a0,$a0,5
-	li	$t1,0
+	li	$v0,0
 1:
 	lb	$t0,($a0)
 	beqz	$t0,2f
 	addi	$a0,$a0,1
-	addi	$t1,$t1,1
+	addi	$v0,$v0,1
 	j	1b
 2:
-	sll	$a0,$t1,3
-	ori	$a0,$a0,TAG_FIXNUM
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
