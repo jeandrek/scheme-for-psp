@@ -55,38 +55,6 @@
 #define MAKE_SYM(name)		.align 4; .string name
 
 
-### Glue
-	.text
-	.globl	peekchar
-peekchar:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	C_peekchar
-	move	$a0,$v0
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
-	.globl	readchar
-readchar:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	C_readchar
-	move	$a0,$v0
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
-
-	.globl	get_symbol
-get_symbol:
-	addi	$sp,$sp,-16
-	sw	$ra,12($sp)
-	jal	intern
-	move	$v0,$a0
-	lw	$ra,12($sp)
-	addi	$sp,$sp,16
-	jr	$ra
-
-
 	.globl	scheme_main
 scheme_main:
 	la	$t0,gc_top_of_stack
@@ -114,7 +82,8 @@ Lnot_imaged:
 	la	$a0,str_fresh
 	jal	writestr
 	jal	make_initial_environment
-	sw	$a0,8($sp)
+	sw	$v0,8($sp)
+	move	$a0,$v0
 	jal	add_prims_platform_dependent
 	lw	$a1,8($sp)
 	la	$t0,global_env
@@ -129,10 +98,12 @@ Lprompt:
 	jal	writechar
 	li	$a0,0
 	jal	read
+	move	$a0,$v0
 	lw	$a1,8($sp)
 	jal	eval
 	la	$t0,SYM(ok)
-	beq	$a0,$t0,Lprompt
+	beq	$v0,$t0,Lprompt
+	move	$a0,$v0
 	jal	write
 	li	$a0,'\n'
 	jal	writechar
@@ -166,7 +137,8 @@ load:
 1:
 	jal	read
 	la	$t0,SYM(Eof)
-	beq	$a0,$t0,2f
+	beq	$v0,$t0,2f
+	move	$a0,$v0
 	lw	$a1,4($sp)
 	jal	eval
 	lw	$a0,8($sp)
@@ -195,7 +167,7 @@ make_initial_environment:
 	beqz	$s2,2f
 	move	$a0,$s1
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	addi	$s1,$s1,SYMBOL_LENGTH
 	addi	$s2,$s2,-1
 	j	1b
@@ -209,13 +181,14 @@ make_initial_environment:
 	lw	$a0,($s1)
 	ori	$a0,$a0,TAG_PROCEDURE
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	addi	$s1,$s1,4
 	addi	$s2,$s2,-1
 	j	1b
 2:
 	move	$a0,$s3
 	jal	cons
+	move	$a0,$v0
 	li	$a1,0
 	jal	cons
 	lw	$s3,($sp)
@@ -230,10 +203,10 @@ prim_eq:
 	DYADIC_ARGS
 Lcmp:
 	bne	$a0,$a1,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -242,10 +215,10 @@ prim_integerp:
 	andi	$a0,$a0,7
 	li	$t0,TAG_FIXNUM
 	bne	$a0,$t0,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -260,9 +233,9 @@ prim_lt:
 	DYADIC_ARGS
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
-	slt	$a0,$a0,$a1
-	sll	$a0,$a0,3
-	addi	$a0,$a0,FALSE
+	slt	$v0,$a0,$a1
+	sll	$v0,$v0,3
+	addi	$v0,$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -271,7 +244,7 @@ prim_add:
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
 	xori	$a1,$a1,TAG_FIXNUM
-	add	$a0,$a0,$a1
+	add	$v0,$a0,$a1
 	jr	$ra
 
 	.align	3
@@ -280,7 +253,7 @@ prim_sub:
 	CHECK_FIXNUM($a0)
 	CHECK_FIXNUM($a1)
 	xori	$a1,$a1,TAG_FIXNUM
-	sub	$a0,$a0,$a1
+	sub	$v0,$a0,$a1
 	jr	$ra
 
 	.align	3
@@ -290,8 +263,8 @@ prim_mul:
 	CHECK_FIXNUM($a1)
 	xori	$a0,$a0,TAG_FIXNUM
 	sra	$a1,$a1,3
-	mul	$a0,$a0,$a1
-	ori	$a0,$a0,TAG_FIXNUM
+	mul	$v0,$a0,$a1
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -301,9 +274,9 @@ prim_quotient:
 	CHECK_FIXNUM($a1)
 	sra	$a0,$a0,3
 	sra	$a1,$a1,3
-	div	$a0,$a0,$a1
-	sll	$a0,$a0,3
-	ori	$a0,$a0,TAG_FIXNUM
+	div	$v0,$a0,$a1
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -313,9 +286,9 @@ prim_remainder:
 	CHECK_FIXNUM($a1)
 	sra	$a0,$a0,3
 	sra	$a1,$a1,3
-	rem	$a0,$a0,$a1
-	sll	$a0,$a0,3
-	ori	$a0,$a0,TAG_FIXNUM
+	rem	$v0,$a0,$a1
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -326,16 +299,16 @@ prim_modulo:
 	sra	$a0,$a0,3
 	sra	$a1,$a1,3
 	## Could this be simpler?
-	rem	$a0,$a0,$a1
-	bge	$a0,$zero,1f
+	rem	$v0,$a0,$a1
+	bge	$v0,$zero,1f
 	blt	$a1,$zero,2f
-	add	$a0,$a0,$a1
+	add	$v0,$v0,$a1
 1:
 	bge	$a1,$zero,2f
-	add	$a0,$a0,$a1
+	add	$v0,$v0,$a1
 2:
-	sll	$a0,$a0,3
-	ori	$a0,$a0,TAG_FIXNUM
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -344,10 +317,10 @@ prim_pairp:
 	andi	$t0,$a0,7
 	bnez	$t0,1f
 	beqz	$a0,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -355,20 +328,21 @@ prim_cons:
 	lw	$t0,4($a0)
 	lw	$t0,($t0)
 	sw	$t0,4($a0)
+	move	$v0,$a0
 	jr	$ra
 
 	.align	3
 prim_car:
 	lw	$a0,($a0)
 	CHECK_PAIR($a0)
-	lw	$a0,($a0)
+	lw	$v0,($a0)
 	jr	$ra
 
 	.align	3
 prim_cdr:
 	lw	$a0,($a0)
 	CHECK_PAIR($a0)
-	lw	$a0,4($a0)
+	lw	$v0,4($a0)
 	jr	$ra
 
 	.align	3
@@ -376,7 +350,7 @@ prim_set_car:
 	DYADIC_ARGS
 	CHECK_PAIR($a0)
 	sw	$a1,($a0)
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	jr	$ra
 
 	.align	3
@@ -384,11 +358,12 @@ prim_set_cdr:
 	DYADIC_ARGS
 	CHECK_PAIR($a0)
 	sw	$a1,4($a0)
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	jr	$ra
 
 	.align	3
 prim_list:
+	move	$v0,$a0
 	jr	$ra
 
 	.align	3
@@ -401,10 +376,10 @@ prim_symbolp:
 	beq	$a0,$t0,1f
 	li	$t0,FALSE
 	beq	$a0,$t0,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -453,10 +428,10 @@ prim_stringp:
 	andi	$t0,$a0,7
 	li	$t1,TAG_STRING
 	bne	$t0,$t1,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -465,16 +440,16 @@ prim_string_length:
 	CHECK_STRING($a0)
 	xori	$a0,$a0,TAG_STRING
 	addi	$a0,$a0,5
-	li	$t1,0
+	li	$v0,0
 1:
 	lb	$t0,($a0)
 	beqz	$t0,2f
 	addi	$a0,$a0,1
-	addi	$t1,$t1,1
+	addi	$v0,$v0,1
 	j	1b
 2:
-	sll	$a0,$t1,3
-	ori	$a0,$a0,TAG_FIXNUM
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	jr	$ra
 
 	.align	3
@@ -483,10 +458,10 @@ prim_procedurep:
 	andi	$t0,$a0,7
 	li	$t1,TAG_PROCEDURE
 	bne	$t0,$t1,1f
-	li	$a0,TRUE
+	li	$v0,TRUE
 	jr	$ra
 1:
-	li	$a0,FALSE
+	li	$v0,FALSE
 	jr	$ra
 
 	.align	3
@@ -500,7 +475,7 @@ prim_write:
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	jal	write
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -516,7 +491,7 @@ prim_display:
 	jal	write
 	la	$t1,printer_display_flag
 	sw	$zero,($t1)
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -527,7 +502,7 @@ prim_newline:
 	sw	$ra,12($sp)
 	li	$a0,'\n'
 	jal	writechar
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -551,7 +526,7 @@ prim_image:
 	li	$a1,PAIR_MEM + SPACE_SIZE
 	## XXX
 	#jal	image
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -568,7 +543,7 @@ prim_load:
 	la	$a1,global_env
 	lw	$a1,($a1)
 	jal	load
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -600,6 +575,7 @@ eval:
 	j	error
 
 Leval_self_evaluating:
+	move	$v0,$a0
 	jr	$ra
 
 Leval_variable:
@@ -630,13 +606,14 @@ Leval_pair:
 	sw	$a1,8($sp)
 	sw	$t0,4($sp)
 	jal	eval_arguments
-	sw	$a0,($sp)
+	sw	$v0,($sp)
 	lw	$a0,4($sp)
 	lw	$a1,8($sp)
 	jal	eval
 	lw	$a1,($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
+	move	$a0,$v0
 	j	apply
 
 
@@ -644,7 +621,7 @@ Leval_pair:
 
 Leval_quote:
 	lw	$a0,4($a0)
-	lw	$a0,($a0)
+	lw	$v0,($a0)
 	jr	$ra
 
 Leval_lambda:
@@ -667,12 +644,12 @@ Leval_if:
 	lw	$a1,4($sp)
 	lw	$t0,8($sp)
 	li	$t1,FALSE
-	beq	$a0,$t1,Leval_alt
+	beq	$v0,$t1,Leval_alt
 	j	Leval_conseq
 Leval_alt:
 	lw	$t0,4($t0)
 	bnez	$t0,Leval_conseq
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -694,7 +671,7 @@ Leval_set:
 	lw	$a0,($a0)
 	move	$s2,$a1
 	jal	eval
-	move	$a1,$a0
+	move	$a1,$v0
 	move	$a0,$s1
 	move	$a2,$s2
 	lw	$s2,4($sp)
@@ -717,7 +694,7 @@ Leval_cond:
 	move	$s2,$a1
 1:
 	bnez	$s1,2f
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	lw	$s3,($sp)
 	lw	$s2,4($sp)
 	lw	$s1,8($sp)
@@ -731,7 +708,7 @@ Leval_cond:
 	move	$a1,$s2
 	jal	eval
 	li	$t0,FALSE
-	beq	$a0,$t0,3f
+	beq	$v0,$t0,3f
 	move	$a0,$s3
 	move	$a1,$s2
 	lw	$s3,($sp)
@@ -815,9 +792,10 @@ Leval_define:
 	lw	$a1,4($t0)
 	sw	$t2,4($sp)
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	la	$a0,SYM(lambda)
 	jal	cons
+	move	$a0,$v0		# check this
 	j	2f
 1:
 	lw	$t0,4($t0)
@@ -826,7 +804,7 @@ Leval_define:
 2:
 	lw	$a1,8($sp)
 	jal	eval
-	move	$a1,$a0
+	move	$a1,$v0
 	lw	$a0,4($sp)
 	lw	$a2,8($sp)
 	lw	$ra,12($sp)
@@ -845,9 +823,10 @@ eval_arguments:
 	sw	$a1,($sp)
 	lw	$a0,($t0)
 	jal	eval
+	move	$a0,$v0
 	lw	$a1,4($sp)
 	jal	cons
-	move	$t1,$a0
+	move	$t1,$v0
 	lw	$t0,8($sp)
 	lw	$t0,4($t0)
 	lw	$a1,($sp)
@@ -894,10 +873,10 @@ make_procedure:
 	sw	$s1,8($sp)
 	move	$s1,$a2
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	move	$a0,$s1
 	jal	cons
-	ori	$a0,$a0,TAG_PROCEDURE
+	ori	$v0,$v0,TAG_PROCEDURE
 	lw	$s1,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
@@ -920,10 +899,11 @@ apply:
 	lw	$t0,4($t0)
 	lw	$a0,($t0)
 	jal	cons
+	move	$a0,$v0
 	lw	$t0,8($sp)
 	lw	$a1,($t0)
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	lw	$t0,8($sp)
 	lw	$t0,4($t0)
 	lw	$a0,4($t0)
@@ -952,7 +932,7 @@ lookup:
 	lw	$t3,4($t3)
 	j	1b
 2:
-	lw	$a0,($t3)
+	lw	$v0,($t3)
 	jr	$ra
 3:
 	lw	$a1,4($a1)
@@ -973,7 +953,7 @@ set_variable:
 	j	1b
 2:
 	sw	$a1,($t3)
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	jr	$ra
 3:
 	lw	$a2,4($a2)
@@ -1009,16 +989,16 @@ define_variable:
 	sw	$t0,4($sp)
 	jal	cons
 	lw	$t0,4($sp)
-	sw	$a0,($t0)
+	sw	$v0,($t0)
 	lw	$a0,8($sp)
 	lw	$a1,4($t0)
 	jal	cons
 	lw	$t0,4($sp)
-	sw	$a0,4($t0)
+	sw	$v0,4($t0)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 4:
-	la	$a0,SYM(ok)
+	la	$v0,SYM(ok)
 	jr	$ra
 
 
@@ -1036,28 +1016,26 @@ Lwhitespace:
 	move	$a0,$s0
 	jal	readchar
 	li	$t1,' '
-	beq	$a0,$t1,Lwhitespace
+	beq	$v0,$t1,Lwhitespace
 	li	$t1,'\n'
-	beq	$a0,$t1,Lwhitespace
+	beq	$v0,$t1,Lwhitespace
 	li	$t1,'\t'
-	beq	$a0,$t1,Lwhitespace
+	beq	$v0,$t1,Lwhitespace
 	li	$t1,'\f'
-	beq	$a0,$t1,Lwhitespace
+	beq	$v0,$t1,Lwhitespace
 	li	$t1,'0'
-	blt	$a0,$t1,1f
+	blt	$v0,$t1,1f
 	li	$t1,'9'
 	li	$t2,0
-	ble	$a0,$t1,Lread_num
+	ble	$v0,$t1,Lread_num
 1:
 	li	$t1,'+'
-	bne	$a0,$t1,2f
-	move	$t0,$a0
-	sw	$t0,4($sp)
+	bne	$v0,$t1,2f
+	sw	$v0,4($sp)
 	move	$a0,$s0
 	jal	peekchar
-	lw	$t0,4($sp)
-	move	$t1,$a0
-	move	$a0,$t0
+	move	$t1,$v0
+	lw	$v0,4($sp)
 	li	$t2,'0'
 	blt	$t1,$t2,2f
 	li	$t2,'9'
@@ -1068,14 +1046,12 @@ Lwhitespace:
 	j	Lread_num
 2:
 	li	$t1,'-'
-	bne	$a0,$t1,3f
-	move	$t0,$a0
-	sw	$t0,4($sp)
+	bne	$v0,$t1,3f
+	sw	$v0,4($sp)
 	move	$a0,$s0
 	jal	peekchar
-	lw	$t0,4($sp)
-	move	$t1,$a0
-	move	$a0,$t0
+	move	$t1,$v0
+	lw	$v0,4($sp)
 	li	$t2,'0'
 	blt	$t1,$t2,3f
 	li	$t2,'9'
@@ -1085,10 +1061,11 @@ Lwhitespace:
 	li	$t2,1
 	j	Lread_num
 3:
-	sw	$a0,4($sp)
+	move	$a0,$v0
 	jal	is_nondigit_symbol_char
-	bnez	$a0,Lread_symbol
-	lw	$a0,4($sp)
+	move	$t0,$v0
+	move	$v0,$a0		# XXX
+	bnez	$t0,Lread_symbol
 7:
 	li	$t1,'('
 	beq	$a0,$t1,Lread_list
@@ -1102,7 +1079,7 @@ Lwhitespace:
 	beq	$a0,$t1,Lread_comment
 	li	$t1,-1
 	bne	$a0,$t1,Lunexpected_char
-	la	$a0,SYM(Eof)
+	la	$v0,SYM(Eof)
 	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
@@ -1113,73 +1090,72 @@ Lunexpected_char:
 	j	error
 
 Lread_num:
-	addi	$t0,$a0,-'0'
+	addi	$t0,$v0,-'0'
 	sw	$t0,4($sp)
 	sw	$t2,($sp)
 1:
 	move	$a0,$s0
 	jal	peekchar
 	li	$t1,'0'
-	blt	$a0,$t1,2f
+	blt	$v0,$t1,2f
 	li	$t1,'9'
-	bgt	$a0,$t1,2f
+	bgt	$v0,$t1,2f
 	move	$a0,$s0
 	jal	readchar
 	lw	$t0,4($sp)
-	addi	$a0,$a0,-'0'
+	addi	$v0,$v0,-'0'
 	li	$t1,10
 	mul	$t0,$t0,$t1
-	add	$t0,$t0,$a0
+	add	$t0,$t0,$v0
 	sw	$t0,4($sp)
 	j	1b
 2:
-	lw	$t0,4($sp)
+	lw	$v0,4($sp)
 	lw	$t2,($sp)
-	move	$a0,$t0
 	beqz	$t2,3f
-	neg	$a0,$a0
+	neg	$v0,$v0
 3:
-	sll	$a0,$a0,3
-	ori	$a0,$a0,TAG_FIXNUM
+	sll	$v0,$v0,3
+	ori	$v0,$v0,TAG_FIXNUM
 	lw	$s0,8($sp)
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
 
 Lread_symbol:
-	lw	$a0,4($sp)
 	li	$t1,'A'
-	blt	$a0,$t1,1f
+	blt	$v0,$t1,1f
 	li	$t1,'Z'
-	bgt	$a0,$t1,1f
-	addi	$a0,$a0,32
+	bgt	$v0,$t1,1f
+	addi	$v0,$v0,32
 1:
 	addi	$sp,$sp,-16
-	sb	$a0,($sp)
+	sb	$v0,($sp)
 	addi	$t0,$sp,1
 2:
 	sw	$t0,20($sp)
 	move	$a0,$s0
 	jal	peekchar
+	move	$a0,$v0
 	jal	is_nondigit_symbol_char
-	bnez	$a0,Lconsume
+	bnez	$v0,Lconsume
 	move	$a0,$s0
 	jal	peekchar	# XXX
 	li	$t1,'0'
-	blt	$a0,$t1,4f
+	blt	$v0,$t1,4f
 	li	$t1,'9'
-	bgt	$a0,$t1,4f
+	bgt	$v0,$t1,4f
 Lconsume:
 	move	$a0,$s0
 	jal	readchar
 	li	$t1,'A'
-	blt	$a0,$t1,3f
+	blt	$v0,$t1,3f
 	li	$t1,'Z'
-	bgt	$a0,$t1,3f
-	addi	$a0,$a0,32
+	bgt	$v0,$t1,3f
+	addi	$v0,$v0,32
 3:
 	lw	$t0,20($sp)
-	sb	$a0,($t0)
+	sb	$v0,($t0)
 	addi	$t0,$t0,1
 	j	2b
 4:
@@ -1187,6 +1163,7 @@ Lconsume:
 	sb	$zero,($t0)
 	move	$a0,$sp
 	jal	intern
+	#move	$a0,$v0		# XXX
 	lw	$s0,24($sp)
 	lw	$ra,28($sp)
 	addi	$sp,$sp,32
@@ -1199,12 +1176,13 @@ Lread_list:
 	move	$a0,$s0
 	jal	peekchar
 	li	$t1,')'
-	beq	$a0,$t1,2f
+	beq	$v0,$t1,2f
 	move	$a0,$s0
 	jal	read
+	move	$a0,$v0
 	lw	$a1,4($sp)
 	jal	cons
-	move	$t0,$a0
+	move	$t0,$v0
 	j	1b
 2:
 	move	$a0,$s0
@@ -1218,9 +1196,10 @@ Lread_list:
 Lread_quote:
 	move	$a0,$s0
 	jal	read
+	move	$a0,$v0
 	li	$a1,0
 	jal	cons
-	move	$a1,$a0
+	move	$a1,$v0
 	la	$a0,SYM(quote)
 	lw	$s0,8($sp)
 	lw	$ra,12($sp)
@@ -1235,8 +1214,8 @@ Lread_string:
 	jal	readchar
 	li	$t0,'\"'
 	lw	$t1,36($sp)
-	beq	$a0,$t0,2f
-	sb	$a0,($t1)
+	beq	$v0,$t0,2f
+	sb	$v0,($t1)
 	addi	$t1,$t1,1
 	sw	$t1,36($sp)
 	j	1b
@@ -1254,13 +1233,13 @@ Lread_hash:
 	move	$a0,$s0
 	jal	readchar
 	li	$t0,'t'
-	bne	$a0,$t0,1f
-	li	$a0,TRUE
+	bne	$v0,$t0,1f
+	li	$v0,TRUE
 	j	2f
 1:
 	li	$t0,'f'
-	bne	$a0,$t0,Lunexpected_char
-	li	$a0,FALSE
+	bne	$v0,$t0,Lunexpected_char
+	li	$v0,FALSE
 2:
 	lw	$s0,8($sp)
 	lw	$ra,12($sp)
@@ -1271,9 +1250,9 @@ Lread_comment:
 	move	$a0,$s0
 	jal	readchar
 	li	$t0,'\n'
-	beq	$a0,$t0,1f
+	beq	$v0,$t0,1f
 	li	$t0,-1
-	beq	$a0,$t0,1f
+	beq	$v0,$t0,1f
 	j	Lread_comment
 1:
 	j	Lwhitespace
@@ -1298,10 +1277,10 @@ is_nondigit_symbol_char:
 	addi	$t0,$t0,1
 	j	3b
 4:
-	li	$a0,1
+	li	$v0,1
 	jr	$ra
 5:
-	li	$a0,0
+	li	$v0,0
 	jr	$ra
 
 	.globl	intern
@@ -1317,22 +1296,22 @@ intern:
 	sw	$a0,8($sp)
 	sw	$a1,4($sp)
 	jal	str_eql
-	bnez	$a0,2f
+	bnez	$v0,2f
 	lw	$a0,8($sp)
 	lw	$a1,4($sp)
 	addi	$a0,$a0,SYMBOL_LENGTH
 	j	1b
 2:
-	lw	$a0,8($sp)
-	ori	$a0,$a0,TAG_SYMBOL
+	lw	$v0,8($sp)
+	ori	$v0,$v0,TAG_SYMBOL
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
 3:
 	sw	$a0,8($sp)
 	jal	str_cpy
-	lw	$a0,8($sp)
-	ori	$a0,$a0,TAG_SYMBOL
+	lw	$v0,8($sp)
+	ori	$v0,$v0,TAG_SYMBOL
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -1346,10 +1325,10 @@ str_eql:
 	addi	$a1,$a1,1
 	j	str_eql
 1:
-	li	$a0,1
+	li	$v0,1
 	jr	$ra
 2:
-	li	$a0,0
+	li	$v0,0
 	jr	$ra
 
 str_cpy:
@@ -1524,7 +1503,7 @@ alloc_string:
 	lw	$a1,8($sp)
 	addi	$a0,$v0,5
 	jal	str_cpy
-	ori	$a0,$v0,TAG_STRING
+	ori	$v0,$v0,TAG_STRING
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
 	jr	$ra
@@ -1543,7 +1522,7 @@ nreverse:
 	move	$a0,$t1
 	j	1b
 2:
-	move	$a0,$t0
+	move	$v0,$t0		# XXX
 	jr	$ra
 
 
@@ -1560,7 +1539,7 @@ cons:
 	addi	REG_FREE,REG_FREE,8
 	sw	$a0,($t0)
 	sw	$a1,4($t0)
-	move	$a0,$t0
+	move	$v0,$t0
 	jr	$ra
 2:
 	addi	$sp,$sp,-16
@@ -1586,7 +1565,7 @@ Lout_of_mem:
 #define GC_ROOT(x)		\
 	move	$a0,x;		\
 	jal	relocate;	\
-	move	x,$a0
+	move	x,$v0
 
 gc:
 	addi	$sp,$sp,-16
@@ -1613,7 +1592,7 @@ Ltraverse_stack:
 	blt	$a0,REG_FROMSPACE,1f
 	bgt	$a0,$t3,1f
 	jal	relocate
-	sw	$a0,($t1)
+	sw	$v0,($t1)
 1:
 	addi	$t1,$t1,4
 	j	Ltraverse_stack
@@ -1623,10 +1602,10 @@ Lgc_loop:
 	lw	$t2,4($t0)
 	move	$a0,$t1
 	jal	relocate
-	sw	$a0,($t0)
+	sw	$v0,($t0)
 	move	$a0,$t2
 	jal	relocate
-	sw	$a0,4($t0)
+	sw	$v0,4($t0)
 	addi	$t0,$t0,8
 	j	Lgc_loop
 1:
@@ -1669,20 +1648,20 @@ relocate:
 	li	$t6,TAG_STRING
 	beq	$t5,$t6,Lmark_string
 1:
+	move	$v0,$a0
 	jr	$ra
 Lrelocate_procedure:
 	la	$t5,PAIR_MEM
-	blt	$a0,$t5,1f
+	blt	$a0,$t5,1b
 	la	$t5,PAIR_MEM + 2*SPACE_SIZE
-	bgt	$a0,$t5,1f
+	bgt	$a0,$t5,1b
 	addi	$sp,$sp,-16
 	sw	$ra,12($sp)
 	xori	$a0,$a0,TAG_PROCEDURE
 	jal	relocate
-	ori	$a0,$a0,TAG_PROCEDURE
+	ori	$v0,$v0,TAG_PROCEDURE
 	lw	$ra,12($sp)
 	addi	$sp,$sp,16
-1:
 	jr	$ra
 Lrelocate_pair:
 	lw	$t5,($a0)
@@ -1691,20 +1670,19 @@ Lrelocate_pair:
 	beq	$t5,$a1,Lfound_broken_heart
 	sw	$t5,(REG_FREE)
 	sw	$t6,4(REG_FREE)
-	move	$t5,REG_FREE
+	move	$v0,REG_FREE
 	addi	REG_FREE,REG_FREE,8
 	sw	$a1,($a0)
-	sw	$t5,4($a0)
-	move	$a0,$t5
+	sw	$v0,4($a0)
 	jr	$ra
 Lfound_broken_heart:
-	move	$a0,$t6
+	move	$v0,$t6
 	jr	$ra
 Lmark_string:
+	move	$v0,$a0
 	xori	$a0,$a0,TAG_STRING
 	li	$t5,1
 	sb	$t5,4($a0)
-	ori	$a0,$a0,TAG_STRING
 	jr	$ra
 
 	.bss
@@ -1735,9 +1713,6 @@ str_bad_exp:	.string	"Unknown expression type: "
 str_unbound:	.string	"Unbound variable: "
 str_not_proc:	.string	"Not a procedure: "
 str_out_of_mem:	.string	"Out of memory"
-	.globl	str_type_pair
-	.globl	str_type_fixnum
-	.globl	str_type_string
 str_type_pair:	.string	"Expected a pair: "
 str_type_fixnum:.string	"Expected a fixnum: "
 str_type_symbol:.string	"Expected a symbol: "
