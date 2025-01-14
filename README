@@ -25,7 +25,10 @@ By default, the read-eval-print-loop will run.  Input is not great
 triangle to enter)
 
 If you'd like to try a demo program (at present, there is only one, a
-game: demo/game.scm), place it on the memory stick e.g. in the root
-directory and add to the end of boot.scm:
+pseudo-graphical game: demo/game.scm), place it on the memory stick
+e.g. in the root directory and add to the end of boot.scm:
 
     (load "ms0:/game.scm")
+
+There's a bit more info at present on my blog post of 30/11/24:
+https://jeandrek.github.io/scheme-for-psp.html
